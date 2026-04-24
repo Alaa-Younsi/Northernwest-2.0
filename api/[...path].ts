@@ -1,8 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
-import jwt from 'jsonwebtoken';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-// ─── Supabase ────────────────────────────────────────────────────────────────
+// ─── Supabase (service role — for DB operations) ──────────────────────────────
 function getSupabase() {
   return createClient(
     process.env.VITE_SUPABASE_URL!,
@@ -11,20 +10,28 @@ function getSupabase() {
   );
 }
 
-// ─── Auth ─────────────────────────────────────────────────────────────────────
-function requireAdmin(req: VercelRequest, res: VercelResponse): boolean {
+// ─── Auth client (anon key — for signInWithPassword / getUser) ────────────────
+function getAuthClient() {
+  return createClient(
+    process.env.VITE_SUPABASE_URL!,
+    process.env.VITE_SUPABASE_ANON_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
+}
+
+// ─── Require admin — verifies the Supabase JWT ────────────────────────────────
+async function requireAdmin(req: VercelRequest, res: VercelResponse): Promise<boolean> {
   const auth = req.headers.authorization;
   if (!auth?.startsWith('Bearer ')) {
     res.status(401).json({ error: 'Unauthorized' });
     return false;
   }
-  try {
-    jwt.verify(auth.slice(7), process.env.ADMIN_JWT_SECRET!);
-    return true;
-  } catch {
-    res.status(401).json({ error: 'Invalid token' });
+  const { data, error } = await getAuthClient().auth.getUser(auth.slice(7));
+  if (error || !data.user) {
+    res.status(401).json({ error: 'Invalid or expired token' });
     return false;
   }
+  return true;
 }
 
 const PRODUCT_SELECT = `*, category:categories(*), variants:product_variants(*)`;
@@ -238,21 +245,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (segments[0] === 'admin') {
     // POST /api/admin/login  (public — no auth check)
     if (segments[1] === 'login' && method === 'POST') {
-      const { email, password } = req.body as { email: string; password: string };
-      const { ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_JWT_SECRET } = process.env;
-
-      if (!ADMIN_EMAIL || !ADMIN_PASSWORD || !ADMIN_JWT_SECRET) {
-        return res.status(500).json({ error: 'Admin credentials not configured' });
+      const { email, password } = body as { email: string; password: string };
+      if (!email || !password) {
+        return res.status(400).json({ error: 'Email and password are required' });
       }
-      if (email !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) {
+      const { data, error } = await getAuthClient().auth.signInWithPassword({ email, password });
+      if (error || !data.session) {
         return res.status(401).json({ error: 'Invalid credentials' });
       }
-      const token = jwt.sign({ role: 'admin', email }, ADMIN_JWT_SECRET, { expiresIn: '8h' });
-      return res.json({ token });
+      return res.json({ token: data.session.access_token });
     }
 
     // All routes below require admin token
-    if (!requireAdmin(req, res)) return;
+    if (!await requireAdmin(req, res)) return;
 
     // GET /api/admin/dashboard
     if (segments[1] === 'dashboard') {
