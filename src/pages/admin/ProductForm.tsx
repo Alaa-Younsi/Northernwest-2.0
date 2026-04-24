@@ -5,7 +5,6 @@ import { z } from 'zod';
 import { Plus, Trash2, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { supabase } from '@/lib/supabase';
-import { api } from '@/lib/api';
 import { toast } from '@/components/ui/Toast';
 import type { Product, Category } from '@/types';
 
@@ -49,7 +48,13 @@ export default function ProductForm({ product, onSave, onCancel }: ProductFormPr
   const [categories, setCategories] = useState<Category[]>([]);
 
   useEffect(() => {
-    api.categories.getAll().then(setCategories).catch(() => {});
+    supabase
+      .from('categories')
+      .select('*')
+      .order('sort_order', { ascending: true })
+      .then(({ data, error }) => {
+        if (!error && data) setCategories(data);
+      });
   }, []);
 
   const {
