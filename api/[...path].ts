@@ -37,7 +37,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const rawPath = req.query.path;
+  const rawPath = req.query['...path'];
   const segments: string[] = Array.isArray(rawPath)
     ? rawPath
     : typeof rawPath === 'string'
