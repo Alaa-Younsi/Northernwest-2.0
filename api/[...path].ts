@@ -70,9 +70,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // ── GET /api/health ───────────────────────────────────────────────────────
   if (segments[0] === 'health') return res.json({ ok: true });
 
+  const db = getSupabase();
+
   // ── /api/categories ────────────────────────────────────────────────────────
   if (segments[0] === 'categories') {
-    const db = getSupabase();
     // GET /api/categories
     if (segments.length === 1) {
       const { data, error } = await db
@@ -174,7 +175,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       address_line2,
       zip_code,
       items,
-    } = req.body as {
+    } = body as {
       customer_name: string;
       customer_email: string;
       customer_phone?: string;
