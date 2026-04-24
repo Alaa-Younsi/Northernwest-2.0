@@ -1,8 +1,10 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { TrendingUp, Package, ShoppingBag, DollarSign, Clock, Plus } from 'lucide-react';
+import { TrendingUp, Package, ShoppingBag, DollarSign, Clock, Plus, Globe, Users, Activity } from 'lucide-react';
 import { useAdminDashboard } from '@/hooks/useAdmin';
 import { Badge } from '@/components/ui/Badge';
+import { api } from '@/lib/api';
 import type { Order } from '@/types';
 
 const STATUS_BADGE_MAP: Record<Order['status'], 'yellow' | 'blue' | 'purple' | 'green' | 'red'> = {
@@ -28,6 +30,21 @@ function Skeleton({ className = '' }: { className?: string }) {
 export default function Dashboard() {
   const navigate = useNavigate();
   const { data, loading } = useAdminDashboard();
+
+  const [visitStats, setVisitStats] = useState<{
+    uniqueToday: number;
+    uniqueTotal: number;
+    totalVisits: number;
+    topPages: Array<{ page: string; count: number }>;
+  } | null>(null);
+  const [visitsLoading, setVisitsLoading] = useState(true);
+
+  useEffect(() => {
+    api.admin.visits.getStats()
+      .then(setVisitStats)
+      .catch(() => {})
+      .finally(() => setVisitsLoading(false));
+  }, []);
 
   const stats = [
     {
@@ -217,6 +234,74 @@ export default function Dashboard() {
                     <Badge variant={STATUS_BADGE_MAP[order.status]}>{order.status}</Badge>
                   </td>
                   <td className="px-6 py-3 text-white">${order.total_amount.toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Analytics */}
+      <div>
+        <h2 className="font-display font-bold text-white uppercase tracking-widest text-sm mb-4 flex items-center gap-2">
+          <Globe size={14} className="text-[#FF0000]" />
+          ANALYTICS
+        </h2>
+
+        {/* Visit stat cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          {[
+            {
+              label: 'Unique Visitors Today',
+              value: visitStats?.uniqueToday ?? 0,
+              icon: Users,
+            },
+            {
+              label: 'Total Unique Visitors',
+              value: visitStats?.uniqueTotal ?? 0,
+              icon: Globe,
+            },
+            {
+              label: 'Total Page Views',
+              value: visitStats?.totalVisits ?? 0,
+              icon: Activity,
+            },
+          ].map((stat) => (
+            <div key={stat.label} className="bg-[#0d0d0d] border border-[#1a1a1a] p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <stat.icon size={14} className="text-[#FF0000]" />
+                <p className="font-mono text-xs text-[#888888] uppercase tracking-widest">{stat.label}</p>
+              </div>
+              {visitsLoading ? (
+                <Skeleton className="h-7 w-16" />
+              ) : (
+                <p className="font-display font-black text-white text-2xl">{stat.value.toLocaleString()}</p>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Top pages */}
+        <div className="bg-[#0d0d0d] border border-[#1a1a1a] overflow-hidden">
+          <div className="px-6 py-4 border-b border-[#1a1a1a]">
+            <h3 className="font-display font-bold text-white uppercase tracking-widest text-xs">Top Pages</h3>
+          </div>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-[#1a1a1a] bg-[#111]">
+                <th className="px-6 py-3 text-left font-mono text-xs text-[#555] uppercase tracking-widest">Page</th>
+                <th className="px-6 py-3 text-left font-mono text-xs text-[#555] uppercase tracking-widest">Views</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visitsLoading ? (
+                <tr><td colSpan={2} className="px-6 py-8 text-center text-[#444] font-mono text-xs">Loading...</td></tr>
+              ) : !visitStats || visitStats.topPages.length === 0 ? (
+                <tr><td colSpan={2} className="px-6 py-8 text-center text-[#444] font-mono text-xs">No data yet</td></tr>
+              ) : visitStats.topPages.map(({ page, count }) => (
+                <tr key={page} className="border-b border-[#1a1a1a]">
+                  <td className="px-6 py-3 font-mono text-xs text-white">{page}</td>
+                  <td className="px-6 py-3 font-mono text-xs text-[#888888]">{count}</td>
                 </tr>
               ))}
             </tbody>

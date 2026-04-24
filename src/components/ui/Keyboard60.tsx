@@ -116,8 +116,8 @@ function SingleKey({ data, onKeyPress }: SingleKeyProps) {
           <span
             className="font-mono text-center leading-none transition-colors duration-75"
             style={{
-              fontSize: data.special ? '0.45rem' : '0.55rem',
-              color: pressed ? '#FF4444' : hovered ? '#FF0000' : '#555555',
+              fontSize: data.special ? 'clamp(0.35rem, 0.8vw, 0.45rem)' : 'clamp(0.38rem, 0.9vw, 0.55rem)',
+              color: pressed ? '#FF4444' : hovered ? '#FF0000' : '#888888',
               textShadow: hovered || pressed ? '0 0 6px rgba(255,0,0,0.8)' : 'none',
               letterSpacing: '0.05em',
               fontWeight: data.special ? 600 : 400,
@@ -142,7 +142,7 @@ export function Keyboard60({ onKeyPress }: { onKeyPress?: (char: string) => void
         border: '1px solid #1f1f1f',
         borderBottom: '4px solid #0a0a0a',
         borderRadius: '6px',
-        padding: '14px 14px 16px',
+        padding: 'clamp(8px, 2vw, 14px) clamp(8px, 2vw, 14px) clamp(10px, 2.5vw, 16px)',
         boxShadow: [
           '0 0 0 1px #111',
           '0 8px 32px rgba(0,0,0,0.8)',
@@ -177,7 +177,7 @@ export function Keyboard60({ onKeyPress }: { onKeyPress?: (char: string) => void
       {/* Key rows */}
       <div className="flex flex-col gap-[4px]">
         {ROWS.map((row, rowIdx) => (
-          <div key={rowIdx} className="flex" style={{ height: '38px' }}>
+          <div key={rowIdx} className="flex" style={{ height: 'clamp(26px, 6vw, 38px)' }}>
             {row.map((key, keyIdx) => (
               <SingleKey key={`${rowIdx}-${keyIdx}-${key.label}`} data={key} onKeyPress={onKeyPress} />
             ))}

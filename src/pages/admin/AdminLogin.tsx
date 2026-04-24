@@ -55,9 +55,7 @@ export default function AdminLogin() {
           className="w-full max-w-sm bg-[#0d0d0d] border border-[#1a1a1a] p-8"
         >
           <div className="text-center mb-8">
-            <div className="w-12 h-12 bg-black border border-[#FF0000] flex items-center justify-center mx-auto mb-4">
-              <span className="text-[#FF0000] font-display font-black text-lg">NW</span>
-            </div>
+            <img src="/logo.png" alt="Northernwest" className="h-12 w-auto mx-auto mb-4" />
             <h1
               className="font-display font-black text-white uppercase text-2xl tracking-widest glitch-text"
               data-text="ADMIN ACCESS"

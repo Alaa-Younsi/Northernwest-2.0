@@ -77,17 +77,17 @@ export function Footer() {
             </h3>
             <ul className="space-y-2">
               {[
-                { href: '#', label: t('footer.contact') },
-                { href: '#', label: t('footer.privacy') },
-                { href: '#', label: t('footer.terms') },
+                { to: '/contact', label: t('footer.contact') },
+                { to: '/privacy-policy', label: t('footer.privacy') },
+                { to: '/terms', label: t('footer.terms') },
               ].map((item) => (
                 <li key={item.label}>
-                  <a
-                    href={item.href}
+                  <Link
+                    to={item.to}
                     className="font-mono text-xs text-[#888888] hover:text-[#FF0000] transition-colors"
                   >
                     {item.label}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -95,8 +95,16 @@ export function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="border-t border-[#1a1a1a] pt-6 text-center">
+        <div className="border-t border-[#1a1a1a] pt-6 flex flex-col sm:flex-row items-center justify-between gap-2">
           <p className="font-mono text-xs text-[#888888]">{t('footer.rights')}</p>
+          <a
+            href="https://alaayounsi.vercel.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-mono text-xs text-[#555] hover:text-[#FF0000] transition-colors"
+          >
+            Website created by Alaa Younsi
+          </a>
         </div>
       </div>
     </footer>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Outlet, useNavigate, NavLink, Link } from 'react-router-dom';
-import { LayoutDashboard, Package, ShoppingBag, LogOut, Tag, Settings2, Store } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingBag, LogOut, Tag, Settings2, Store, MessageSquare, Mail } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 
 export default function AdminLayout() {
@@ -29,6 +29,8 @@ export default function AdminLayout() {
     { to: '/admin/products', label: 'Products', icon: Package, end: false },
     { to: '/admin/orders', label: 'Orders', icon: ShoppingBag, end: false },
     { to: '/admin/categories', label: 'Categories', icon: Tag, end: false },
+    { to: '/admin/messages', label: 'Messages', icon: MessageSquare, end: false },
+    { to: '/admin/newsletter', label: 'Newsletter', icon: Mail, end: false },
     { to: '/admin/settings', label: 'Settings', icon: Settings2, end: false },
   ];
 
@@ -38,9 +40,7 @@ export default function AdminLayout() {
       <aside className="hidden lg:flex flex-col w-64 bg-[#0d0d0d] border-r border-[#1a1a1a]">
         <div className="p-6 border-b border-[#1a1a1a]">
           <Link to="/admin" className="flex items-center gap-2 mb-3">
-            <div className="w-8 h-8 bg-black border border-[#FF0000] flex items-center justify-center">
-              <span className="text-[#FF0000] font-display font-black text-sm">NW</span>
-            </div>
+            <img src="/logo.png" alt="NW" className="h-8 w-auto" />
             <div>
               <div className="font-display font-bold text-white text-sm uppercase tracking-widest">
                 NORTHERNWEST

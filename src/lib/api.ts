@@ -1,11 +1,22 @@
 import { supabase } from '@/lib/supabase';
 import type { CartItem, Category, Product, Order, OrderItem } from '@/types';
 
-// Suppress unused import warning — CartItem is used by orders.create
+// Suppress unused import warning
 type _CartItemRef = CartItem;
+type _OrderItemRef = OrderItem;
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 const PRODUCT_SELECT = `*, category:categories(*), variants:product_variants(*)`;
+
+// ── Visitor ID (anonymous analytics) ─────────────────────────────────────────
+function getVisitorId(): string {
+  let id = localStorage.getItem('nw_visitor_id');
+  if (!id) {
+    id = `v-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    localStorage.setItem('nw_visitor_id', id);
+  }
+  return id;
+}
 
 function getSession() {
   // Returns the Supabase access token for the logged-in admin
@@ -161,6 +172,35 @@ export const api = {
       if (itemsErr) throw new Error(itemsErr.message);
 
       return { id: order.id, order_number: order.order_number };
+    },
+  },
+
+  // ── Contact messages ──────────────────────────────────────────────────────
+  messages: {
+    create: async (data: { name: string; email: string; message: string }): Promise<void> => {
+      const { error } = await supabase.from('messages').insert(data);
+      if (error) throw new Error(error.message);
+    },
+  },
+
+  // ── Newsletter ────────────────────────────────────────────────────────────
+  newsletter: {
+    subscribe: async (email: string): Promise<void> => {
+      const { error } = await supabase.from('newsletter_subscriptions').insert({ email });
+      // Ignore duplicate email (23505 = unique_violation)
+      if (error && error.code !== '23505') throw new Error(error.message);
+    },
+  },
+
+  // ── Page visit tracking ───────────────────────────────────────────────────
+  visits: {
+    track: async (page: string): Promise<void> => {
+      try {
+        const visitor_id = getVisitorId();
+        await supabase.from('page_visits').insert({ visitor_id, page });
+      } catch {
+        // Non-critical — fail silently
+      }
     },
   },
 
@@ -323,6 +363,63 @@ export const api = {
         const { error } = await supabase.from('categories').delete().eq('id', id);
         if (error) throw new Error(error.message);
         return { success: true };
+      },
+    },
+
+    messages: {
+      getAll: async () => {
+        const { data, error } = await supabase
+          .from('messages')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (error) throw new Error(error.message);
+        return data ?? [];
+      },
+      markRead: async (id: string): Promise<void> => {
+        const { error } = await supabase.from('messages').update({ is_read: true }).eq('id', id);
+        if (error) throw new Error(error.message);
+      },
+      delete: async (id: string): Promise<void> => {
+        const { error } = await supabase.from('messages').delete().eq('id', id);
+        if (error) throw new Error(error.message);
+      },
+    },
+
+    newsletter: {
+      getAll: async () => {
+        const { data, error } = await supabase
+          .from('newsletter_subscriptions')
+          .select('*')
+          .order('subscribed_at', { ascending: false });
+        if (error) throw new Error(error.message);
+        return data ?? [];
+      },
+      delete: async (id: string): Promise<void> => {
+        const { error } = await supabase.from('newsletter_subscriptions').delete().eq('id', id);
+        if (error) throw new Error(error.message);
+      },
+    },
+
+    visits: {
+      getStats: async () => {
+        const today = new Date().toISOString().split('T')[0];
+        const [allRes, todayRes] = await Promise.all([
+          supabase.from('page_visits').select('visitor_id, page, visited_at'),
+          supabase.from('page_visits').select('visitor_id').gte('visited_at', `${today}T00:00:00`),
+        ]);
+        const all = (allRes.data ?? []) as Array<{ visitor_id: string; page: string; visited_at: string }>;
+        const todayData = (todayRes.data ?? []) as Array<{ visitor_id: string }>;
+        const uniqueTotal = new Set(all.map((v) => v.visitor_id)).size;
+        const uniqueToday = new Set(todayData.map((v) => v.visitor_id)).size;
+        const pageCount: Record<string, number> = {};
+        for (const v of all) {
+          pageCount[v.page] = (pageCount[v.page] ?? 0) + 1;
+        }
+        const topPages = Object.entries(pageCount)
+          .sort(([, a], [, b]) => b - a)
+          .slice(0, 5)
+          .map(([page, count]) => ({ page, count }));
+        return { uniqueTotal, uniqueToday, topPages, totalVisits: all.length };
       },
     },
   },

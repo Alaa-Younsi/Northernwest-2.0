@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingCart, Menu, X, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -23,11 +23,18 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
 export function Navbar() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const totalItems = useCartStore((s) => s.totalItems());
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [shopDropdown, setShopDropdown] = useState(false);
+
+  // Close nav and cart when route changes
+  useEffect(() => {
+    setMobileOpen(false);
+    setCartOpen(false);
+  }, [location.pathname]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 80);

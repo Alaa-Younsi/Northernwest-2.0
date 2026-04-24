@@ -8,6 +8,7 @@ import { useFeaturedProducts, useProducts } from '@/hooks/useProducts';
 import { Button } from '@/components/ui/Button';
 import { MouseIcon, HeadphonesIcon, KeyboardIcon } from '@/components/icons';
 import { KeyboardWithTerminal } from '@/components/ui/KeyboardWithTerminal';
+import { api } from '@/lib/api';
 
 // ── Animated Counter ──────────────────────────────────────────────────────
 function Counter({ target, label }: { target: number; label: string }) {
@@ -74,12 +75,22 @@ export default function Home() {
   const { products: newArrivals, loading: newLoading } = useProducts({ sort: 'newest', page: 1 });
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
+  const [subscribing, setSubscribing] = useState(false);
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email) {
+    if (!email) return;
+    setSubscribing(true);
+    try {
+      await api.newsletter.subscribe(email);
       setSubscribed(true);
       setEmail('');
+    } catch {
+      // Fail silently — duplicate emails are ignored by API
+      setSubscribed(true);
+      setEmail('');
+    } finally {
+      setSubscribing(false);
     }
   };
 
@@ -89,6 +100,16 @@ export default function Home() {
 
       {/* ── HERO ───────────────────────────────────────────── */}
       <section className="relative min-h-screen flex flex-col lg:flex-row items-center overflow-hidden">
+        {/* Hero background image */}
+        <div
+          className="absolute inset-0 z-0"
+          style={{
+            backgroundImage: 'url(/background.jpeg)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            opacity: 0.07,
+          }}
+        />
         {/* LEFT */}
         <div className="w-full lg:w-1/2 flex flex-col justify-center px-8 lg:px-16 py-16 z-10">
           <motion.div
@@ -156,7 +177,7 @@ export default function Home() {
         </div>
 
         {/* RIGHT: Terminal + 60% Keyboard */}
-        <div className="w-full lg:w-1/2 flex items-center justify-center px-8 py-16 lg:py-0">
+        <div className="w-full lg:w-1/2 flex items-center justify-center px-8 py-16 lg:py-0 z-10">
           <KeyboardWithTerminal />
         </div>
 
@@ -257,7 +278,7 @@ export default function Home() {
           {t('sections.newArrivals')}
         </h2>
         <ProductGrid
-          products={newArrivals.slice(0, 8)}
+          products={newArrivals.slice(0, 4)}
           loading={newLoading}
         />
       </section>
@@ -293,7 +314,7 @@ export default function Home() {
                 required
                 className="flex-1 bg-[#0d0d0d] border border-[#1a1a1a] px-4 py-3 font-mono text-sm text-white placeholder-[#333] focus:border-[#FF0000] focus:outline-none"
               />
-              <Button type="submit" variant="primary">
+              <Button type="submit" variant="primary" loading={subscribing}>
                 {t('sections.subscribe')}
               </Button>
             </form>

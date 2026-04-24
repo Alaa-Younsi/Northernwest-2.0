@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { ToastContainer } from '@/components/ui/Toast';
 import Layout from '@/components/layout/Layout';
@@ -12,6 +12,9 @@ const Category = lazy(() => import('@/pages/Category'));
 const Product = lazy(() => import('@/pages/Product'));
 const Checkout = lazy(() => import('@/pages/Checkout'));
 const OrderConfirmation = lazy(() => import('@/pages/OrderConfirmation'));
+const Contact = lazy(() => import('@/pages/Contact'));
+const TermsOfService = lazy(() => import('@/pages/TermsOfService'));
+const PrivacyPolicy = lazy(() => import('@/pages/PrivacyPolicy'));
 const NotFound = lazy(() => import('@/pages/NotFound'));
 
 // Admin pages
@@ -21,6 +24,8 @@ const ProductsManager = lazy(() => import('@/pages/admin/ProductsManager'));
 const OrdersManager = lazy(() => import('@/pages/admin/OrdersManager'));
 const CategoriesManager = lazy(() => import('@/pages/admin/CategoriesManager'));
 const AdminSettings = lazy(() => import('@/pages/admin/Settings'));
+const Messages = lazy(() => import('@/pages/admin/Messages'));
+const Newsletter = lazy(() => import('@/pages/admin/Newsletter'));
 
 const Loader = () => (
   <div className="min-h-screen bg-[#050505] flex items-center justify-center">
@@ -44,6 +49,9 @@ export default function App() {
               <Route path="product/:slug" element={<Product />} />
               <Route path="checkout" element={<Checkout />} />
               <Route path="order-confirmation/:orderNumber" element={<OrderConfirmation />} />
+              <Route path="contact" element={<Contact />} />
+              <Route path="terms" element={<TermsOfService />} />
+              <Route path="privacy-policy" element={<PrivacyPolicy />} />
               <Route path="*" element={<NotFound />} />
             </Route>
 
@@ -56,6 +64,8 @@ export default function App() {
               <Route path="products" element={<ProductsManager />} />
               <Route path="orders" element={<OrdersManager />} />
               <Route path="categories" element={<CategoriesManager />} />
+              <Route path="messages" element={<Messages />} />
+              <Route path="newsletter" element={<Newsletter />} />
               <Route path="settings" element={<AdminSettings />} />
             </Route>
           </Routes>

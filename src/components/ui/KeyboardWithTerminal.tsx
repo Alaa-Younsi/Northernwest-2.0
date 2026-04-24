@@ -61,7 +61,7 @@ export function KeyboardWithTerminal() {
           <div className="w-2.5 h-2.5 rounded-full" style={{ background: '#333' }} />
           <span
             className="ml-2"
-            style={{ color: '#444', fontSize: '0.6rem', letterSpacing: '0.15em', textTransform: 'uppercase' }}
+            style={{ color: '#666', fontSize: '0.6rem', letterSpacing: '0.15em', textTransform: 'uppercase' }}
           >
             northernwest — terminal
           </span>
@@ -77,7 +77,7 @@ export function KeyboardWithTerminal() {
             <div
               key={i}
               style={{
-                color: line.startsWith('  ') ? '#444' : '#33FF33',
+                color: line.startsWith('  ') ? '#666' : '#33FF33',
                 lineHeight: '1.6',
                 whiteSpace: 'pre-wrap',
                 wordBreak: 'break-all',
