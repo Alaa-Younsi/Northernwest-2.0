@@ -1,4 +1,3 @@
-import { motion, AnimatePresence } from 'framer-motion';
 import { X, Trash2, Plus, Minus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -14,31 +13,25 @@ interface CartDrawerProps {
 export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const closeCart = useCartStore((s) => s.closeCart);
   const lang = i18n.language as Lang;
   const { items, removeItem, updateQuantity, totalAmount } = useCartStore();
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 bg-black/70 z-[80]"
-          />
+    <>
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        className={`fixed inset-0 bg-black/70 z-[80] transition-opacity duration-300 ${
+          isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+      />
 
-          {/* Drawer */}
-          <motion.div
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed right-0 top-0 h-full w-full sm:w-[420px] bg-[#0d0d0d] border-l border-[#1a1a1a] z-[90] flex flex-col"
-          >
+      {/* Drawer */}
+      <div
+        className={`fixed right-0 top-0 h-full w-full sm:w-[420px] bg-[#0d0d0d] border-l border-[#1a1a1a] z-[90] flex flex-col transition-transform duration-300 ease-in-out ${
+          isOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-[#1a1a1a]">
               <h2 className="font-display text-xl uppercase tracking-widest text-white">
@@ -172,15 +165,13 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                   variant="primary"
                   size="lg"
                   className="w-full"
-                  onClick={() => { closeCart(); navigate('/checkout'); }}
+                  onClick={() => { onClose(); navigate('/checkout'); }}
                 >
                   {t('cart.checkout')}
                 </Button>
               </div>
             )}
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+      </div>
+    </>
   );
 }

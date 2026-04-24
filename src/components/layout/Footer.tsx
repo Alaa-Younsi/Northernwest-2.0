@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { XIcon, InstagramIcon, DiscordIcon } from '@/components/icons';
+import { XIcon, InstagramIcon, FacebookIcon, TikTokIcon } from '@/components/icons';
 
 export function Footer() {
   const { t } = useTranslation();
@@ -22,25 +22,31 @@ export function Footer() {
             </p>
             <div className="flex gap-3">
               <a
-                href="#"
-                aria-label="Twitter/X"
-                className="w-8 h-8 border border-[#1a1a1a] flex items-center justify-center text-[#888888] hover:border-[#FF0000] hover:text-[#FF0000] transition-colors"
-              >
-                <XIcon size={14} />
-              </a>
-              <a
-                href="#"
+                href="https://www.instagram.com/northernwest_store/"
+                target="_blank"
+                rel="noopener noreferrer"
                 aria-label="Instagram"
                 className="w-8 h-8 border border-[#1a1a1a] flex items-center justify-center text-[#888888] hover:border-[#FF0000] hover:text-[#FF0000] transition-colors"
               >
                 <InstagramIcon size={14} />
               </a>
               <a
-                href="#"
-                aria-label="Discord"
+                href="https://www.tiktok.com/@northernwest_store"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="TikTok"
                 className="w-8 h-8 border border-[#1a1a1a] flex items-center justify-center text-[#888888] hover:border-[#FF0000] hover:text-[#FF0000] transition-colors"
               >
-                <DiscordIcon size={14} />
+                <TikTokIcon size={14} />
+              </a>
+              <a
+                href="https://www.facebook.com/profile.php?id=61582884008243"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Facebook"
+                className="w-8 h-8 border border-[#1a1a1a] flex items-center justify-center text-[#888888] hover:border-[#FF0000] hover:text-[#FF0000] transition-colors"
+              >
+                <FacebookIcon size={14} />
               </a>
             </div>
           </div>

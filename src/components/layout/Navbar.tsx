@@ -208,63 +208,54 @@ export function Navbar() {
         </div>
       </header>
 
-      {/* Mobile menu */}
-      <AnimatePresence>
-        {mobileOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setMobileOpen(false)}
-              className="fixed inset-0 bg-black/80 z-[75]"
-            />
-            <motion.div
-              initial={{ x: '-100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '-100%' }}
-              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-              className="fixed top-0 left-0 h-full w-80 bg-[#050505] border-r border-[#1a1a1a] z-[80] flex flex-col"
+      {/* Mobile menu — always rendered, CSS transitions */}
+      <div
+        className={`fixed inset-0 bg-black/80 z-[75] transition-opacity duration-300 ${
+          mobileOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={() => setMobileOpen(false)}
+      />
+      <div
+        className={`fixed top-0 left-0 h-full w-80 bg-[#050505] border-r border-[#1a1a1a] z-[80] flex flex-col transition-transform duration-300 ease-in-out ${
+          mobileOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <div className="flex items-center justify-between p-6 border-b border-[#1a1a1a]">
+          <span className="font-display font-bold text-white uppercase tracking-widest">
+            NORTHERNWEST
+          </span>
+          <button
+            onClick={() => setMobileOpen(false)}
+            className="text-[#888888] hover:text-white"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <nav className="flex-1 p-6 space-y-1">
+          {[
+            { to: '/', label: t('nav.home') },
+            { to: '/shop', label: t('nav.shop') },
+            { to: '/category/mouse', label: t('nav.mouse') },
+            { to: '/category/headphones', label: t('nav.headphones') },
+            { to: '/category/keyboards', label: t('nav.keyboards') },
+            { to: '/contact', label: 'Contact' },
+            { to: '/admin', label: t('nav.admin') },
+          ].map((item) => (
+            <button
+              key={item.to}
+              onClick={() => handleMobileNav(item.to)}
+              className="block w-full text-left font-display uppercase tracking-widest text-[#888888] hover:text-white transition-colors py-3 border-b border-[#0d0d0d] text-sm"
             >
-              <div className="flex items-center justify-between p-6 border-b border-[#1a1a1a]">
-                <span className="font-display font-bold text-white uppercase tracking-widest">
-                  NORTHERNWEST
-                </span>
-                <button
-                  onClick={() => setMobileOpen(false)}
-                  className="text-[#888888] hover:text-white"
-                >
-                  <X size={20} />
-                </button>
-              </div>
+              {item.label}
+            </button>
+          ))}
+        </nav>
 
-              <nav className="flex-1 p-6 space-y-1">
-                {[
-                  { to: '/', label: t('nav.home') },
-                  { to: '/shop', label: t('nav.shop') },
-                  { to: '/category/mouse', label: t('nav.mouse') },
-                  { to: '/category/headphones', label: t('nav.headphones') },
-                  { to: '/category/keyboards', label: t('nav.keyboards') },
-                  { to: '/contact', label: 'Contact' },
-                  { to: '/admin', label: t('nav.admin') },
-                ].map((item) => (
-                  <button
-                    key={item.to}
-                    onClick={() => handleMobileNav(item.to)}
-                    className="block w-full text-left font-display uppercase tracking-widest text-[#888888] hover:text-white transition-colors py-3 border-b border-[#0d0d0d] text-sm"
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </nav>
-
-              <div className="p-6 border-t border-[#1a1a1a]">
-                <LanguageSwitcher />
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+        <div className="p-6 border-t border-[#1a1a1a]">
+          <LanguageSwitcher />
+        </div>
+      </div>
 
       {/* Cart Drawer */}
       <CartDrawer isOpen={isCartOpen} onClose={closeCart} />

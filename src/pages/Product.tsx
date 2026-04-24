@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp, Plus, Minus } from 'lucide-react';
@@ -19,6 +19,10 @@ export default function Product() {
   const lang = i18n.language as Lang;
   const { product, loading } = useProduct(slug);
   const addItem = useCartStore((s) => s.addItem);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [slug]);
 
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [quantity, setQuantity] = useState(1);
