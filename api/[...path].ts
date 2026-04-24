@@ -46,19 +46,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const method = req.method ?? 'GET';
   const db = getSupabase();
 
-  // ── GET /api/health ────────────────────────────────────────────────────────
-  if (segments[0] === 'health') return res.json({ ok: true });
-
-  // ── GET /api/debug — check env vars are set (safe, values not exposed) ────
-  if (segments[0] === 'debug') {
+  // ── GET /api/debug — dump raw request info to diagnose routing ────────────
+  if (req.url?.includes('/debug')) {
     return res.json({
-      VITE_SUPABASE_URL: !!process.env.VITE_SUPABASE_URL,
-      SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-      ADMIN_EMAIL: !!process.env.ADMIN_EMAIL,
-      ADMIN_PASSWORD: !!process.env.ADMIN_PASSWORD,
-      ADMIN_JWT_SECRET: !!process.env.ADMIN_JWT_SECRET,
+      url: req.url,
+      rawPath,
+      segments,
+      env: {
+        VITE_SUPABASE_URL: !!process.env.VITE_SUPABASE_URL,
+        SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+        ADMIN_EMAIL: !!process.env.ADMIN_EMAIL,
+        ADMIN_PASSWORD: !!process.env.ADMIN_PASSWORD,
+        ADMIN_JWT_SECRET: !!process.env.ADMIN_JWT_SECRET,
+      },
     });
   }
+
+  // ── GET /api/health ───────────────────────────────────────────────────────
+  if (segments[0] === 'health') return res.json({ ok: true });
 
   // ── /api/categories ────────────────────────────────────────────────────────
   if (segments[0] === 'categories') {
