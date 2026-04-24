@@ -1,18 +1,18 @@
-# Northernwest 2.0
+# Northernwest
 
-A fully custom-built cyberpunk e-commerce store for gaming peripherals — keyboards, mice, and headphones. Every line of code was written from scratch by **Alaa Younsi** ([@alaayounsi](https://alaayounsi.vercel.app/)), with no Shopify, no WordPress, no page-builder of any kind. It is a 100% programmed web application.
+A fully custom-built cyberpunk e-commerce store for gaming peripherals — keyboards, mice, and headphones. Made by **Alaa Younsi** ([@alaayounsi](https://alaayounsi.vercel.app/)), with no Shopify, no WordPress. It is a 100% programmed web application.
 
 ---
 
 ## Live Store
 
-> Deployed on **Vercel** — auto-deploys on every push to `main`.
+northernwest.shop
 
 ---
 
 ## What Makes This Store Different
 
-Most e-commerce sites run on platforms like Shopify or WooCommerce. Northernwest 2.0 is built entirely from source code: a React SPA frontend, a PostgreSQL database hosted on Supabase, and a built-in admin dashboard — all programmed by hand, all tailored specifically for this brand.
+Most e-commerce sites run on platforms like Shopify or WooCommerce. Northernwest is built entirely from source code: a React SPA frontend, a PostgreSQL database hosted on Supabase, and a built-in admin dashboard — all programmed by hand, all tailored specifically for this brand.
 
 ### The Integrated Admin Dashboard
 
@@ -84,7 +84,7 @@ This entire component lives in `src/components/ui/Keyboard60.tsx` and `src/compo
 ## Project Structure
 
 ```
-Northernwest 2.0/
+Northernwest/
 ├── public/
 │   └── logo.png                  # Store logo
 ├── src/
@@ -191,6 +191,12 @@ npm run dev       # http://localhost:5173
 npm run build     # production build → dist/
 npm run preview   # preview production build
 ```
+
+---
+
+## License
+
+This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
 
 ---
 
