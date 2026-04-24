@@ -151,13 +151,13 @@ export default function CategoriesManager() {
 
   return (
     <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="font-display font-black text-white uppercase text-3xl tracking-widest border-l-2 border-[#FF0000] pl-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+        <h1 className="font-display font-black text-white uppercase text-2xl sm:text-3xl tracking-widest border-l-2 border-[#FF0000] pl-4">
           CATEGORIES
         </h1>
         <button
           onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 font-mono text-xs text-black bg-[#FF0000] px-4 py-2 hover:bg-red-600 transition-colors"
+          className="flex items-center gap-2 font-mono text-xs text-black bg-[#FF0000] px-3 py-2 hover:bg-red-600 transition-colors whitespace-nowrap"
         >
           <Plus size={12} /> NEW CATEGORY
         </button>

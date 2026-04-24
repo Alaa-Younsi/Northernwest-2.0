@@ -1,3 +1,4 @@
+import { flushSync } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Trash2, Plus, Minus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -171,7 +172,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                   variant="primary"
                   size="lg"
                   className="w-full"
-                  onClick={() => { onClose(); navigate('/checkout'); }}
+                  onClick={() => { flushSync(() => onClose()); navigate('/checkout'); }}
                 >
                   {t('cart.checkout')}
                 </Button>

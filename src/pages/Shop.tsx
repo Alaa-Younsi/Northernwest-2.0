@@ -87,6 +87,9 @@ export default function Shop() {
 
           {/* Main content */}
           <div className="flex-1 min-w-0">
+            <div className="text-center font-mono text-xs text-[#FF0000] tracking-[0.3em] py-2 border border-[#FF0000]/30 bg-[#FF0000]/5 mb-6">
+              ✦ FREE SHIPPING ON ALL ORDERS ✦
+            </div>
             <ProductGrid products={filtered} loading={loading} />
 
             {/* Pagination */}

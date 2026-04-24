@@ -65,13 +65,13 @@ export default function OrdersManager() {
 
   return (
     <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="font-display font-black text-white uppercase text-3xl tracking-widest border-l-2 border-[#FF0000] pl-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+        <h1 className="font-display font-black text-white uppercase text-2xl sm:text-3xl tracking-widest border-l-2 border-[#FF0000] pl-4">
           ORDERS
         </h1>
         <button
           onClick={exportCSV}
-          className="flex items-center gap-2 font-mono text-xs text-[#888888] border border-[#1a1a1a] px-3 py-2 hover:text-white hover:border-[#888888] transition-colors"
+          className="flex items-center gap-2 font-mono text-xs text-[#888888] border border-[#1a1a1a] px-3 py-2 hover:text-white hover:border-[#888888] transition-colors whitespace-nowrap"
         >
           <Download size={12} /> EXPORT CSV
         </button>

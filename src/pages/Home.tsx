@@ -101,12 +101,11 @@ export default function Home() {
       {/* ── HERO ───────────────────────────────────────────── */}
       <section className="relative min-h-screen flex flex-col lg:flex-row items-center overflow-hidden">
         {/* LEFT */}
-        <div className="w-full lg:w-1/2 flex flex-col justify-center px-8 lg:px-16 py-16 z-10">
+        <div className="w-full lg:w-1/2 flex flex-col justify-center px-8 lg:px-16 py-16 z-10 lg:self-start lg:pt-16">
           <motion.div
             initial="initial"
             animate="animate"
             transition={{ staggerChildren: 0.15 }}
-            className="lg:-translate-y-8"
           >
             <motion.p
               variants={fadeInUp}
@@ -230,6 +229,9 @@ export default function Home() {
             View All →
           </Link>
         </div>
+        <div className="text-center font-mono text-xs text-[#FF0000] tracking-[0.3em] py-2 border border-[#FF0000]/30 bg-[#FF0000]/5 mb-6">
+          ✦ FREE SHIPPING ON ALL ORDERS ✦
+        </div>
         <ProductGrid products={featured.slice(0, 4)} loading={featLoading} />
       </section>
 
@@ -268,6 +270,9 @@ export default function Home() {
         <h2 className="font-display font-black text-white uppercase tracking-widest text-3xl md:text-4xl mb-12">
           {t('sections.newArrivals')}
         </h2>
+        <div className="text-center font-mono text-xs text-[#FF0000] tracking-[0.3em] py-2 border border-[#FF0000]/30 bg-[#FF0000]/5 mb-6">
+          ✦ FREE SHIPPING ON ALL ORDERS ✦
+        </div>
         <ProductGrid
           products={newArrivals.slice(0, 4)}
           loading={newLoading}
