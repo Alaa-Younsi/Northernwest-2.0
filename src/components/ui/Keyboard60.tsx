@@ -6,6 +6,19 @@ interface KeyData {
   special?: boolean;
 }
 
+// Map key labels to the character they should type
+function keyToChar(label: string): string | null {
+  if (label === '' ) return ' ';          // spacebar
+  if (label === '⌫') return '\b';        // backspace
+  if (label === 'Enter') return '\n';
+  if (label === 'Tab') return '\t';
+  // Ignore modifier / special keys
+  if (['Caps', 'Shift', 'Ctrl', 'Alt', 'Win', 'Fn'].includes(label)) return null;
+  // Single printable characters
+  if (label.length === 1) return label.toLowerCase();
+  return null;
+}
+
 const ROWS: KeyData[][] = [
   // Number row — 15u total
   [
@@ -52,9 +65,10 @@ const ROWS: KeyData[][] = [
 
 interface SingleKeyProps {
   data: KeyData;
+  onKeyPress?: (char: string) => void;
 }
 
-function SingleKey({ data }: SingleKeyProps) {
+function SingleKey({ data, onKeyPress }: SingleKeyProps) {
   const [hovered, setHovered] = useState(false);
   const [pressed, setPressed] = useState(false);
 
@@ -67,7 +81,11 @@ function SingleKey({ data }: SingleKeyProps) {
       className="px-[3px] py-[3px]"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => { setHovered(false); setPressed(false); }}
-      onMouseDown={() => setPressed(true)}
+      onMouseDown={() => {
+        setPressed(true);
+        const char = keyToChar(data.label);
+        if (char !== null) onKeyPress?.(char);
+      }}
       onMouseUp={() => setPressed(false)}
     >
       <div
@@ -114,7 +132,7 @@ function SingleKey({ data }: SingleKeyProps) {
   );
 }
 
-export function Keyboard60() {
+export function Keyboard60({ onKeyPress }: { onKeyPress?: (char: string) => void }) {
   return (
     <div
       className="relative w-full"
@@ -161,7 +179,7 @@ export function Keyboard60() {
         {ROWS.map((row, rowIdx) => (
           <div key={rowIdx} className="flex" style={{ height: '38px' }}>
             {row.map((key, keyIdx) => (
-              <SingleKey key={`${rowIdx}-${keyIdx}-${key.label}`} data={key} />
+              <SingleKey key={`${rowIdx}-${keyIdx}-${key.label}`} data={key} onKeyPress={onKeyPress} />
             ))}
           </div>
         ))}

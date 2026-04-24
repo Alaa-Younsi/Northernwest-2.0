@@ -7,7 +7,7 @@ import { ProductGrid } from '@/components/shop/ProductGrid';
 import { useFeaturedProducts, useProducts } from '@/hooks/useProducts';
 import { Button } from '@/components/ui/Button';
 import { MouseIcon, HeadphonesIcon, KeyboardIcon } from '@/components/icons';
-import { Keyboard60 } from '@/components/ui/Keyboard60';
+import { KeyboardWithTerminal } from '@/components/ui/KeyboardWithTerminal';
 
 // ── Animated Counter ──────────────────────────────────────────────────────
 function Counter({ target, label }: { target: number; label: string }) {
@@ -155,9 +155,9 @@ export default function Home() {
           </motion.div>
         </div>
 
-        {/* RIGHT: 60% Keyboard */}
+        {/* RIGHT: Terminal + 60% Keyboard */}
         <div className="w-full lg:w-1/2 flex items-center justify-center px-8 py-16 lg:py-0">
-          <Keyboard60 />
+          <KeyboardWithTerminal />
         </div>
 
         {/* Diagonal cut */}
