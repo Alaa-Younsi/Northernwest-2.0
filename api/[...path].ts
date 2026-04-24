@@ -47,11 +47,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const rawPath = req.query['...path'];
-  const segments: string[] = Array.isArray(rawPath)
+  let segments: string[] = Array.isArray(rawPath)
     ? rawPath
     : typeof rawPath === 'string'
     ? rawPath.split('/').filter(Boolean)
     : [];
+
+  // Fallback: when Vercel rewrites don't populate req.query['...path'], parse from URL
+  if (segments.length === 0 && req.url) {
+    const urlPath = req.url.split('?')[0];
+    const apiPrefix = '/api/';
+    if (urlPath.startsWith(apiPrefix)) {
+      segments = urlPath.slice(apiPrefix.length).split('/').filter(Boolean);
+    }
+  }
+
   const method = req.method ?? 'GET';
 
   // Parse body safely (Vercel may pass it as string or object)
@@ -61,7 +71,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   // ── GET /api/debug — dump raw request info to diagnose routing ────────────
-  if (req.url?.includes('/debug')) {
+  if (segments[0] === 'debug' && segments.length === 1) {
     return res.json({
       url: req.url,
       rawPath,
@@ -69,6 +79,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       env: {
         VITE_SUPABASE_URL: !!process.env.VITE_SUPABASE_URL,
         SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+        VITE_SUPABASE_ANON_KEY: !!process.env.VITE_SUPABASE_ANON_KEY,
         ADMIN_EMAIL: !!process.env.ADMIN_EMAIL,
         ADMIN_PASSWORD: !!process.env.ADMIN_PASSWORD,
         ADMIN_JWT_SECRET: !!process.env.ADMIN_JWT_SECRET,
