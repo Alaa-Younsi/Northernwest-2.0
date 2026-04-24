@@ -1,52 +1,116 @@
-import type { CartItem, Category, Product, Order } from '@/types';
-
-const BASE_URL = '/api';
-
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const token = localStorage.getItem('nw_admin_token');
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(options?.headers as Record<string, string>),
-  };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-
-  const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Request failed' }));
-    throw new Error(err.error || err.message || `HTTP ${res.status}`);
-  }
-  return res.json() as Promise<T>;
-}
+import { supabase } from '@/lib/supabase';
+import type { CartItem, Category, Product, Order, OrderItem } from '@/types';
 
 // Suppress unused import warning — CartItem is used by orders.create
 type _CartItemRef = CartItem;
 
+// ── helpers ──────────────────────────────────────────────────────────────────
+const PRODUCT_SELECT = `*, category:categories(*), variants:product_variants(*)`;
+
+function getSession() {
+  // Returns the Supabase access token for the logged-in admin
+  return supabase.auth.getSession().then(({ data }) => data.session?.access_token ?? null);
+}
+
+// ── Public API ────────────────────────────────────────────────────────────────
 export const api = {
   categories: {
-    getAll: () => request<Category[]>('/categories'),
-    getBySlug: (slug: string) => request<Category>(`/categories/${slug}`),
+    getAll: async (): Promise<Category[]> => {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('sort_order', { ascending: true, nullsFirst: false })
+        .order('name_en', { ascending: true });
+      if (error) throw new Error(error.message);
+      return data ?? [];
+    },
+    getBySlug: async (slug: string): Promise<Category> => {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .eq('slug', slug)
+        .single();
+      if (error) throw new Error(error.message);
+      return data;
+    },
   },
 
   products: {
-    getAll: (params?: { category?: string; sort?: string; order?: string; page?: number; limit?: number }) => {
-      const qs = new URLSearchParams();
-      if (params?.category) qs.set('category', params.category);
-      if (params?.sort) qs.set('sort', params.sort);
-      if (params?.order) qs.set('order', params.order);
-      if (params?.page) qs.set('page', String(params.page));
-      if (params?.limit) qs.set('limit', String(params.limit));
-      return request<{ data: Product[]; count: number; page: number; limit: number }>(
-        `/products?${qs.toString()}`
-      );
+    getAll: async (params?: {
+      category?: string;
+      sort?: string;
+      order?: string;
+      page?: number;
+      limit?: number;
+    }): Promise<{ data: Product[]; count: number; page: number; limit: number }> => {
+      const page = params?.page ?? 1;
+      const limit = params?.limit ?? 20;
+      const from = (page - 1) * limit;
+      const to = from + limit - 1;
+
+      let query = supabase
+        .from('products')
+        .select(PRODUCT_SELECT, { count: 'exact' })
+        .eq('is_active', true)
+        .range(from, to);
+
+      if (params?.category) {
+        const { data: cat } = await supabase
+          .from('categories')
+          .select('id')
+          .eq('slug', params.category)
+          .single();
+        if (cat) query = query.eq('category_id', cat.id);
+      }
+
+      const sortCol = params?.sort === 'price' ? 'base_price' : 'created_at';
+      const ascending = params?.order === 'asc';
+      query = query.order(sortCol, { ascending });
+
+      const { data, error, count } = await query;
+      if (error) throw new Error(error.message);
+      return { data: (data as Product[]) ?? [], count: count ?? 0, page, limit };
     },
-    getFeatured: () => request<Product[]>('/products/featured'),
-    getByCategory: (slug: string) => request<Product[]>(`/products/category/${slug}`),
-    getBySlug: (slug: string) => request<Product>(`/products/${slug}`),
+
+    getFeatured: async (): Promise<Product[]> => {
+      const { data, error } = await supabase
+        .from('products')
+        .select(PRODUCT_SELECT)
+        .eq('is_featured', true)
+        .eq('is_active', true);
+      if (error) throw new Error(error.message);
+      return (data as Product[]) ?? [];
+    },
+
+    getByCategory: async (slug: string): Promise<Product[]> => {
+      const { data: cat } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('slug', slug)
+        .single();
+      if (!cat) return [];
+      const { data, error } = await supabase
+        .from('products')
+        .select(PRODUCT_SELECT)
+        .eq('category_id', cat.id)
+        .eq('is_active', true);
+      if (error) throw new Error(error.message);
+      return (data as Product[]) ?? [];
+    },
+
+    getBySlug: async (slug: string): Promise<Product> => {
+      const { data, error } = await supabase
+        .from('products')
+        .select(PRODUCT_SELECT)
+        .eq('slug', slug)
+        .single();
+      if (error) throw new Error(error.message);
+      return data as Product;
+    },
   },
 
   orders: {
-    create: (data: {
+    create: async (orderData: {
       customer_name: string;
       customer_email: string;
       customer_phone?: string;
@@ -57,70 +121,165 @@ export const api = {
       zip_code?: string;
       notes?: string;
       items: Array<{ variant_id: string; quantity: number }>;
-    }) =>
-      request<{ order_number: string; id: string }>('/orders', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      }),
+    }): Promise<{ order_number: string; id: string }> => {
+      const { items, ...orderFields } = orderData;
+
+      // Calculate total from variants
+      const variantIds = items.map((i) => i.variant_id);
+      const { data: variants, error: varErr } = await supabase
+        .from('product_variants')
+        .select('id, price_modifier, products(base_price)')
+        .in('id', variantIds);
+      if (varErr) throw new Error(varErr.message);
+
+      const priceMap: Record<string, number> = {};
+      for (const v of variants ?? []) {
+        const base = (v as any).products?.base_price ?? 0;
+        priceMap[v.id] = base + v.price_modifier;
+      }
+
+      const total_amount = items.reduce(
+        (sum, i) => sum + (priceMap[i.variant_id] ?? 0) * i.quantity,
+        0
+      );
+
+      const orderNumber = `NW-${Date.now()}`;
+      const { data: order, error: orderErr } = await supabase
+        .from('orders')
+        .insert({ ...orderFields, order_number: orderNumber, total_amount, status: 'pending' })
+        .select('id, order_number')
+        .single();
+      if (orderErr) throw new Error(orderErr.message);
+
+      const orderItems = items.map((i) => ({
+        order_id: order.id,
+        variant_id: i.variant_id,
+        quantity: i.quantity,
+        unit_price: priceMap[i.variant_id] ?? 0,
+      }));
+      const { error: itemsErr } = await supabase.from('order_items').insert(orderItems);
+      if (itemsErr) throw new Error(itemsErr.message);
+
+      return { id: order.id, order_number: order.order_number };
+    },
   },
 
+  // ── Admin API (requires Supabase Auth session) ────────────────────────────
   admin: {
-    login: (email: string, password: string) =>
-      request<{ token: string }>('/admin/login', {
-        method: 'POST',
-        body: JSON.stringify({ email, password }),
-      }),
+    login: async (email: string, password: string): Promise<{ token: string }> => {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw new Error(error.message);
+      return { token: data.session?.access_token ?? '' };
+    },
 
-    dashboard: () =>
-      request<{
-        total_orders: number;
-        pending_orders: number;
-        total_products: number;
-        revenue: number;
-        orders_by_status: Record<string, number>;
-        recent_orders: Order[];
-        top_products: Array<{ product_name_en: string; total_sold: number; revenue: number }>;
-      }>('/admin/dashboard'),
+    logout: async () => {
+      await supabase.auth.signOut();
+    },
+
+    dashboard: async () => {
+      const [ordersRes, productsRes] = await Promise.all([
+        supabase.from('orders').select('id, status, total_amount, created_at, customer_name, customer_email, order_number').order('created_at', { ascending: false }),
+        supabase.from('products').select('id'),
+      ]);
+
+      const orders: Order[] = (ordersRes.data ?? []) as Order[];
+      const total_orders = orders.length;
+      const pending_orders = orders.filter((o) => o.status === 'pending').length;
+      const total_products = productsRes.data?.length ?? 0;
+      const revenue = orders.reduce((s, o) => s + (o.total_amount ?? 0), 0);
+
+      const orders_by_status: Record<string, number> = {};
+      for (const o of orders) {
+        orders_by_status[o.status] = (orders_by_status[o.status] ?? 0) + 1;
+      }
+
+      const recent_orders = orders.slice(0, 5);
+
+      return { total_orders, pending_orders, total_products, revenue, orders_by_status, recent_orders, top_products: [] };
+    },
 
     products: {
-      getAll: () => request<Product[]>('/admin/products'),
-      create: (data: unknown) =>
-        request<Product>('/admin/products', { method: 'POST', body: JSON.stringify(data) }),
-      update: (id: string, data: unknown) =>
-        request<Product>(`/admin/products/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-      delete: (id: string) =>
-        request<{ success: boolean }>(`/admin/products/${id}`, { method: 'DELETE' }),
+      getAll: async (): Promise<Product[]> => {
+        const { data, error } = await supabase.from('products').select(PRODUCT_SELECT).order('created_at', { ascending: false });
+        if (error) throw new Error(error.message);
+        return (data as Product[]) ?? [];
+      },
+      create: async (productData: unknown): Promise<Product> => {
+        const { data, error } = await supabase.from('products').insert(productData as any).select(PRODUCT_SELECT).single();
+        if (error) throw new Error(error.message);
+        return data as Product;
+      },
+      update: async (id: string, productData: unknown): Promise<Product> => {
+        const { data, error } = await supabase.from('products').update(productData as any).eq('id', id).select(PRODUCT_SELECT).single();
+        if (error) throw new Error(error.message);
+        return data as Product;
+      },
+      delete: async (id: string): Promise<{ success: boolean }> => {
+        const { error } = await supabase.from('products').delete().eq('id', id);
+        if (error) throw new Error(error.message);
+        return { success: true };
+      },
     },
 
     orders: {
-      getAll: (params?: { status?: string; page?: number; limit?: number }) => {
-        const qs = new URLSearchParams();
-        if (params?.status) qs.set('status', params.status);
-        if (params?.page) qs.set('page', String(params.page));
-        if (params?.limit) qs.set('limit', String(params.limit));
-        return request<{ data: Order[]; count: number }>(`/admin/orders?${qs.toString()}`);
+      getAll: async (params?: { status?: string; page?: number; limit?: number }): Promise<{ data: Order[]; count: number }> => {
+        const page = params?.page ?? 1;
+        const limit = params?.limit ?? 20;
+        const from = (page - 1) * limit;
+        const to = from + limit - 1;
+
+        let query = supabase
+          .from('orders')
+          .select('*, items:order_items(*)', { count: 'exact' })
+          .order('created_at', { ascending: false })
+          .range(from, to);
+        if (params?.status) query = query.eq('status', params.status);
+        const { data, error, count } = await query;
+        if (error) throw new Error(error.message);
+        return { data: (data as Order[]) ?? [], count: count ?? 0 };
       },
-      getById: (id: string) => request<Order>(`/admin/orders/${id}`),
-      updateStatus: (id: string, status: string) =>
-        request<Order>(`/admin/orders/${id}/status`, {
-          method: 'PATCH',
-          body: JSON.stringify({ status }),
-        }),
-      addNote: (id: string, note: string) =>
-        request<Order>(`/admin/orders/${id}/note`, {
-          method: 'PATCH',
-          body: JSON.stringify({ note }),
-        }),
+      getById: async (id: string): Promise<Order> => {
+        const { data, error } = await supabase.from('orders').select('*, items:order_items(*)').eq('id', id).single();
+        if (error) throw new Error(error.message);
+        return data as Order;
+      },
+      updateStatus: async (id: string, status: string): Promise<Order> => {
+        const { data, error } = await supabase.from('orders').update({ status }).eq('id', id).select('*, items:order_items(*)').single();
+        if (error) throw new Error(error.message);
+        return data as Order;
+      },
+      addNote: async (id: string, note: string): Promise<Order> => {
+        const { data, error } = await supabase.from('orders').update({ admin_note: note }).eq('id', id).select('*, items:order_items(*)').single();
+        if (error) throw new Error(error.message);
+        return data as Order;
+      },
     },
 
     categories: {
-      getAll: () => request<Category[]>('/admin/categories'),
-      create: (data: unknown) =>
-        request<Category>('/admin/categories', { method: 'POST', body: JSON.stringify(data) }),
-      update: (id: string, data: unknown) =>
-        request<Category>(`/admin/categories/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-      delete: (id: string) =>
-        request<{ success: boolean }>(`/admin/categories/${id}`, { method: 'DELETE' }),
+      getAll: async (): Promise<Category[]> => {
+        const { data, error } = await supabase.from('categories').select('*').order('sort_order', { ascending: true, nullsFirst: false }).order('name_en', { ascending: true });
+        if (error) throw new Error(error.message);
+        return data ?? [];
+      },
+      create: async (categoryData: unknown): Promise<Category> => {
+        const { data, error } = await supabase.from('categories').insert(categoryData as any).select('*').single();
+        if (error) throw new Error(error.message);
+        return data;
+      },
+      update: async (id: string, categoryData: unknown): Promise<Category> => {
+        const { data, error } = await supabase.from('categories').update(categoryData as any).eq('id', id).select('*').single();
+        if (error) throw new Error(error.message);
+        return data;
+      },
+      delete: async (id: string): Promise<{ success: boolean }> => {
+        const { error } = await supabase.from('categories').delete().eq('id', id);
+        if (error) throw new Error(error.message);
+        return { success: true };
+      },
     },
   },
 };
+
+// Keep getSession exported in case any component needs the raw token
+export { getSession };
+

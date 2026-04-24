@@ -164,7 +164,7 @@ export default function Dashboard() {
                     <td colSpan={4} className="px-6 py-3"><Skeleton className="h-4 w-full" /></td>
                   </tr>
                 ))
-              ) : data?.top_products.map((p, i) => (
+              ) : (data?.top_products as Array<{ product_name_en: string; total_sold: number; revenue: number }> ?? []).map((p, i) => (
                 <tr key={p.product_name_en} className="border-b border-[#1a1a1a] hover:bg-[#1a1a1a]">
                   <td className="px-6 py-3 text-[#FF0000] font-bold">{i + 1}</td>
                   <td className="px-6 py-3 text-white">{p.product_name_en}</td>

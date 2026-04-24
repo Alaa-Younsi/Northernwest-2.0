@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { supabase } from '@/lib/supabase';
 
 interface AuthStore {
   token: string | null;
@@ -15,12 +16,11 @@ export const useAuthStore = create<AuthStore>()(
       isAdmin: false,
 
       setToken: (token) => {
-        localStorage.setItem('nw_admin_token', token);
         set({ token, isAdmin: true });
       },
 
       logout: () => {
-        localStorage.removeItem('nw_admin_token');
+        supabase.auth.signOut();
         set({ token: null, isAdmin: false });
       },
     }),

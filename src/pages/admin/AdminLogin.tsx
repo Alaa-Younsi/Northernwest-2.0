@@ -32,7 +32,6 @@ export default function AdminLogin() {
     try {
       const result = await api.admin.login(data.email, data.password);
       setToken(result.token);
-      localStorage.setItem('nw_admin_token', result.token);
       navigate('/admin');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Login failed');
