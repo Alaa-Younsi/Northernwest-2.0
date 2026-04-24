@@ -25,15 +25,17 @@ export function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const totalItems = useCartStore((s) => s.totalItems());
+  const isCartOpen = useCartStore((s) => s.isCartOpen);
+  const openCart = useCartStore((s) => s.openCart);
+  const closeCart = useCartStore((s) => s.closeCart);
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [cartOpen, setCartOpen] = useState(false);
   const [shopDropdown, setShopDropdown] = useState(false);
 
   // Close nav and cart when route changes
   useEffect(() => {
     setMobileOpen(false);
-    setCartOpen(false);
+    closeCart();
   }, [location.pathname]);
 
   useEffect(() => {
@@ -169,7 +171,7 @@ export function Navbar() {
 
             {/* Cart */}
             <button
-              onClick={() => setCartOpen(true)}
+              onClick={() => openCart()}
               className="relative text-[#888888] hover:text-white transition-colors"
               aria-label={t('nav.cart')}
             >
@@ -265,7 +267,7 @@ export function Navbar() {
       </AnimatePresence>
 
       {/* Cart Drawer */}
-      <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} />
+      <CartDrawer isOpen={isCartOpen} onClose={closeCart} />
     </>
   );
 }

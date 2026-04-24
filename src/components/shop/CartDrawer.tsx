@@ -1,4 +1,3 @@
-import { flushSync } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Trash2, Plus, Minus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -15,6 +14,7 @@ interface CartDrawerProps {
 export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const closeCart = useCartStore((s) => s.closeCart);
   const lang = i18n.language as Lang;
   const { items, removeItem, updateQuantity, totalAmount } = useCartStore();
 
@@ -28,7 +28,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/70 z-[80] backdrop-blur-sm"
+            className="fixed inset-0 bg-black/70 z-[80]"
           />
 
           {/* Drawer */}
@@ -172,7 +172,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                   variant="primary"
                   size="lg"
                   className="w-full"
-                  onClick={() => { flushSync(() => onClose()); navigate('/checkout'); }}
+                  onClick={() => { closeCart(); navigate('/checkout'); }}
                 >
                   {t('cart.checkout')}
                 </Button>

@@ -99,9 +99,10 @@ export default function Home() {
       <SEOHead />
 
       {/* ── HERO ───────────────────────────────────────────── */}
-      <section className="relative min-h-screen flex flex-col lg:flex-row items-center overflow-hidden">
+      <section className="relative min-h-screen overflow-hidden">
+        <div className="relative z-10 flex flex-col lg:flex-row min-h-screen max-w-screen-xl mx-auto">
         {/* LEFT */}
-        <div className="w-full lg:w-1/2 flex flex-col justify-center px-8 lg:px-16 py-16 z-10 lg:self-start lg:pt-16">
+        <div className="w-full lg:w-1/2 flex flex-col justify-center px-8 lg:px-12 py-16 lg:self-start lg:pt-20">
           <motion.div
             initial="initial"
             animate="animate"
@@ -167,8 +168,9 @@ export default function Home() {
         </div>
 
         {/* RIGHT: Terminal + 60% Keyboard */}
-        <div className="w-full lg:w-1/2 flex items-center justify-center px-8 py-16 lg:py-0 z-10">
+        <div className="w-full lg:w-1/2 flex items-center justify-center px-8 lg:px-12 py-16 lg:self-start lg:pt-20">
           <KeyboardWithTerminal />
+        </div>
         </div>
 
         {/* Diagonal cut */}

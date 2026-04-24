@@ -4,18 +4,25 @@ import type { CartItem, Product, ProductVariant } from '@/types';
 
 interface CartStore {
   items: CartItem[];
+  isCartOpen: boolean;
   addItem: (product: Product, variant?: ProductVariant, quantity?: number) => void;
   removeItem: (productId: string, variantId?: string) => void;
   updateQuantity: (productId: string, variantId: string | undefined, quantity: number) => void;
   clearCart: () => void;
   totalItems: () => number;
   totalAmount: () => number;
+  openCart: () => void;
+  closeCart: () => void;
 }
 
 export const useCartStore = create<CartStore>()(
   persist(
     (set, get) => ({
       items: [],
+      isCartOpen: false,
+
+      openCart: () => set({ isCartOpen: true }),
+      closeCart: () => set({ isCartOpen: false }),
 
       addItem: (product, variant, quantity = 1) => {
         set((state) => {
@@ -78,6 +85,7 @@ export const useCartStore = create<CartStore>()(
     }),
     {
       name: 'northernwest-cart',
+      partialize: (state) => ({ items: state.items }),
     }
   )
 );
