@@ -5,8 +5,9 @@ import { z } from 'zod';
 import { Plus, Trash2, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { supabase } from '@/lib/supabase';
+import { api } from '@/lib/api';
 import { toast } from '@/components/ui/Toast';
-import type { Product } from '@/types';
+import type { Product, Category } from '@/types';
 
 const variantSchema = z.object({
   id: z.string().optional(),
@@ -42,15 +43,14 @@ interface ProductFormProps {
   onCancel: () => void;
 }
 
-const CATEGORIES = [
-  { id: 'mouse', name: 'Mouse' },
-  { id: 'headphones', name: 'Headphones' },
-  { id: 'keyboards', name: 'Keyboards' },
-];
-
 export default function ProductForm({ product, onSave, onCancel }: ProductFormProps) {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    api.categories.getAll().then(setCategories).catch(() => {});
+  }, []);
 
   const {
     register,
@@ -134,8 +134,8 @@ export default function ProductForm({ product, onSave, onCancel }: ProductFormPr
         <label className={labelClass}>Category *</label>
         <select {...register('category_id')} className={`${inputClass} cursor-pointer`}>
           <option value="">Select category</option>
-          {CATEGORIES.map((c) => (
-            <option key={c.id} value={c.id}>{c.name}</option>
+          {categories.map((c) => (
+            <option key={c.id} value={c.id}>{c.name_en}</option>
           ))}
         </select>
         {errors.category_id && <p className="font-mono text-xs text-[#FF0000] mt-1">{errors.category_id.message}</p>}

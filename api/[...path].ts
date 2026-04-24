@@ -26,7 +26,8 @@ async function requireAdmin(req: VercelRequest, res: VercelResponse): Promise<bo
     res.status(401).json({ error: 'Unauthorized' });
     return false;
   }
-  const { data, error } = await getAuthClient().auth.getUser(auth.slice(7));
+  // Use service role key — it can verify any Supabase JWT without needing anon key
+  const { data, error } = await getSupabase().auth.getUser(auth.slice(7));
   if (error || !data.user) {
     res.status(401).json({ error: 'Invalid or expired token' });
     return false;
@@ -291,7 +292,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.json(data);
       }
       if (method === 'POST') {
-        const { variants, ...productData } = req.body as { variants: unknown[]; [k: string]: unknown };
+        const { variants, ...productData } = body as { variants: unknown[]; [k: string]: unknown };
         if (!productData.slug && productData.name_en) {
           productData.slug = String(productData.name_en).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
         }
@@ -310,7 +311,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (segments[1] === 'products' && segments.length === 3) {
       const id = segments[2];
       if (method === 'PATCH') {
-        const { variants, ...productData } = req.body as { variants?: unknown[]; [k: string]: unknown };
+        const { variants, ...productData } = body as { variants?: unknown[]; [k: string]: unknown };
         const { data: product, error } = await db.from('products').update(productData).eq('id', id).select().single();
         if (error) return res.status(500).json({ error: error.message });
         if (variants !== undefined) {
@@ -342,7 +343,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // PATCH /api/admin/orders/:id/status
     if (segments[1] === 'orders' && segments.length === 4 && segments[3] === 'status' && method === 'PATCH') {
-      const { status } = req.body as { status: string };
+      const { status } = body as { status: string };
       const VALID = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
       if (!VALID.includes(status)) return res.status(400).json({ error: 'Invalid status' });
 
