@@ -44,7 +44,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     ? rawPath.split('/').filter(Boolean)
     : [];
   const method = req.method ?? 'GET';
-  const db = getSupabase();
+
+  // Parse body safely (Vercel may pass it as string or object)
+  let body: Record<string, unknown> = {};
+  if (req.body) {
+    body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+  }
 
   // ── GET /api/debug — dump raw request info to diagnose routing ────────────
   if (req.url?.includes('/debug')) {
@@ -67,6 +72,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // ── /api/categories ────────────────────────────────────────────────────────
   if (segments[0] === 'categories') {
+    const db = getSupabase();
     // GET /api/categories
     if (segments.length === 1) {
       const { data, error } = await db
