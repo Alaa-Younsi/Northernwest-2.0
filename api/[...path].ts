@@ -44,6 +44,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // ── GET /api/health ────────────────────────────────────────────────────────
   if (segments[0] === 'health') return res.json({ ok: true });
 
+  // ── GET /api/debug — check env vars are set (safe, values not exposed) ────
+  if (segments[0] === 'debug') {
+    return res.json({
+      VITE_SUPABASE_URL: !!process.env.VITE_SUPABASE_URL,
+      SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+      ADMIN_EMAIL: !!process.env.ADMIN_EMAIL,
+      ADMIN_PASSWORD: !!process.env.ADMIN_PASSWORD,
+      ADMIN_JWT_SECRET: !!process.env.ADMIN_JWT_SECRET,
+    });
+  }
+
   // ── /api/categories ────────────────────────────────────────────────────────
   if (segments[0] === 'categories') {
     // GET /api/categories
