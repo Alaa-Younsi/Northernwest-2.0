@@ -90,7 +90,23 @@ export const api = {
         .eq('is_featured', true)
         .eq('is_active', true);
       if (error) throw new Error(error.message);
-      return (data as Product[]) ?? [];
+
+      const featured = (data as Product[]) ?? [];
+      if (featured.length >= 4) return featured.slice(0, 4);
+
+      // Supplement with newest active products if fewer than 4 are featured
+      const featuredIds = featured.map((p) => p.id);
+      const { data: newest } = await supabase
+        .from('products')
+        .select(PRODUCT_SELECT)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(8);
+
+      const supplemental = ((newest as Product[]) ?? [])
+        .filter((p) => !featuredIds.includes(p.id));
+
+      return [...featured, ...supplemental].slice(0, 4);
     },
 
     getByCategory: async (slug: string): Promise<Product[]> => {

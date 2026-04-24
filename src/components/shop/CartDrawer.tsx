@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Trash2, Plus, Minus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useCartStore } from '@/store/cartStore';
 import { Button } from '@/components/ui/Button';
 import type { Lang } from '@/types';
@@ -13,6 +13,7 @@ interface CartDrawerProps {
 
 export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const lang = i18n.language as Lang;
   const { items, removeItem, updateQuantity, totalAmount } = useCartStore();
 
@@ -166,11 +167,14 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                     ${totalAmount().toFixed(2)}
                   </span>
                 </div>
-                <Link to="/checkout" onClick={onClose}>
-                  <Button variant="primary" size="lg" className="w-full">
-                    {t('cart.checkout')}
-                  </Button>
-                </Link>
+                <Button
+                  variant="primary"
+                  size="lg"
+                  className="w-full"
+                  onClick={() => { onClose(); navigate('/checkout'); }}
+                >
+                  {t('cart.checkout')}
+                </Button>
               </div>
             )}
           </motion.div>

@@ -9,6 +9,7 @@ export default function Layout() {
 
   useEffect(() => {
     api.visits.track(location.pathname);
+    window.scrollTo(0, 0);
   }, [location.pathname]);
 
   return (

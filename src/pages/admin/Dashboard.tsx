@@ -78,20 +78,20 @@ export default function Dashboard() {
 
   return (
     <div className="p-6 max-w-7xl space-y-8">
-      <div className="flex items-center justify-between">
-        <h1 className="font-display font-black text-white uppercase text-3xl tracking-widest border-l-2 border-[#FF0000] pl-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <h1 className="font-display font-black text-white uppercase text-2xl sm:text-3xl tracking-widest border-l-2 border-[#FF0000] pl-4">
           DASHBOARD
         </h1>
-        <div className="flex gap-3">
+        <div className="flex gap-2 flex-wrap">
           <button
             onClick={() => navigate('/admin/products')}
-            className="flex items-center gap-2 font-mono text-xs text-[#FF0000] border border-[#FF0000] px-4 py-2 hover:bg-[#FF0000] hover:text-black transition-colors"
+            className="flex items-center gap-1.5 font-mono text-xs text-[#FF0000] border border-[#FF0000] px-3 py-2 hover:bg-[#FF0000] hover:text-black transition-colors whitespace-nowrap"
           >
-            <Plus size={12} /> ADD PRODUCT
+            <Plus size={11} /> ADD PRODUCT
           </button>
           <button
             onClick={() => navigate('/admin/orders')}
-            className="font-mono text-xs text-[#888888] border border-[#1a1a1a] px-4 py-2 hover:text-white hover:border-[#888888] transition-colors"
+            className="font-mono text-xs text-[#888888] border border-[#1a1a1a] px-3 py-2 hover:text-white hover:border-[#888888] transition-colors whitespace-nowrap"
           >
             VIEW ALL ORDERS →
           </button>

@@ -36,95 +36,84 @@ export default function AdminLayout() {
 
   return (
     <div className="min-h-screen flex bg-[#050505]">
-      {/* Sidebar — desktop */}
-      <aside className="hidden lg:flex flex-col w-64 bg-[#0d0d0d] border-r border-[#1a1a1a]">
-        <div className="p-6 border-b border-[#1a1a1a]">
-          <Link to="/admin" className="flex items-center gap-2 mb-3">
-            <img src="/logo.png" alt="NW" className="h-8 w-auto" />
-            <div>
-              <div className="font-display font-bold text-white text-sm uppercase tracking-widest">
-                NORTHERNWEST
+      {/* Sidebar — icon-only on sm/md, full on lg */}
+      <aside className="flex flex-col bg-[#0d0d0d] border-r border-[#1a1a1a] w-12 lg:w-64 flex-shrink-0">
+        {/* Logo area */}
+        <div className="border-b border-[#1a1a1a]">
+          {/* Desktop: full logo + clock */}
+          <div className="hidden lg:block p-6">
+            <Link to="/admin" className="flex items-center gap-2 mb-3">
+              <img src="/logo.png" alt="NW" className="h-8 w-auto" />
+              <div>
+                <div className="font-display font-bold text-white text-sm uppercase tracking-widest">
+                  NORTHERNWEST
+                </div>
+                <div className="font-mono text-xs text-[#FF0000] uppercase tracking-widest">
+                  Admin Panel
+                </div>
               </div>
-              <div className="font-mono text-xs text-[#FF0000] uppercase tracking-widest">
-                Admin Panel
-              </div>
+            </Link>
+            <div className="flex items-center justify-between">
+              <span className="font-mono text-xs text-[#444]">{clock}</span>
+              <span className="flex items-center gap-1.5 font-mono text-xs text-green-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                Online
+              </span>
             </div>
-          </Link>
-          <div className="flex items-center justify-between">
-            <span className="font-mono text-xs text-[#444]">{clock}</span>
-            <span className="flex items-center gap-1.5 font-mono text-xs text-green-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-              Online
-            </span>
+          </div>
+          {/* Mobile: just icon */}
+          <div className="lg:hidden flex justify-center py-3">
+            <Link to="/admin">
+              <img src="/logo.png" alt="NW" className="h-5 w-auto" />
+            </Link>
           </div>
         </div>
 
-        <nav className="flex-1 p-4 space-y-1">
+        {/* Nav items */}
+        <nav className="flex-1 py-2 lg:p-4 lg:space-y-1">
           {navItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-3 font-mono text-sm transition-colors ${
+                `flex items-center justify-center lg:justify-start gap-3 px-0 lg:px-4 py-3 font-mono text-sm transition-colors ${
                   isActive
                     ? 'text-white bg-[#FF0000]/10 border-l-2 border-[#FF0000]'
                     : 'text-[#888888] hover:text-white hover:bg-[#1a1a1a]'
                 }`
               }
+              title={item.label}
             >
-              <item.icon size={16} />
-              {item.label}
+              <item.icon size={16} className="flex-shrink-0" />
+              <span className="hidden lg:block">{item.label}</span>
             </NavLink>
           ))}
         </nav>
 
-        <div className="p-4 border-t border-[#1a1a1a] space-y-1">
+        {/* Bottom actions */}
+        <div className="border-t border-[#1a1a1a] py-2 lg:p-4 lg:space-y-1">
           <Link
             to="/"
-            className="flex items-center gap-3 w-full px-4 py-3 font-mono text-sm text-[#888888] hover:text-white hover:bg-[#1a1a1a] transition-colors"
+            title="Back to Store"
+            className="flex items-center justify-center lg:justify-start gap-3 w-full px-0 lg:px-4 py-3 font-mono text-sm text-[#888888] hover:text-white hover:bg-[#1a1a1a] transition-colors"
           >
-            <Store size={16} />
-            Back to Store
+            <Store size={16} className="flex-shrink-0" />
+            <span className="hidden lg:block">Back to Store</span>
           </Link>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 w-full px-4 py-3 font-mono text-sm text-[#FF0000] hover:bg-[#FF0000]/10 transition-colors"
+            title="Logout"
+            className="flex items-center justify-center lg:justify-start gap-3 w-full px-0 lg:px-4 py-3 font-mono text-sm text-[#FF0000] hover:bg-[#FF0000]/10 transition-colors"
           >
-            <LogOut size={16} />
-            Logout
+            <LogOut size={16} className="flex-shrink-0" />
+            <span className="hidden lg:block">Logout</span>
           </button>
         </div>
       </aside>
 
-      {/* Mobile bottom tab */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-[#0d0d0d] border-t border-[#1a1a1a] z-50 flex">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.end}
-            className={({ isActive }) =>
-              `flex-1 flex flex-col items-center justify-center py-3 gap-1 font-mono text-xs transition-colors ${
-                isActive ? 'text-[#FF0000]' : 'text-[#888888]'
-              }`
-            }
-          >
-            <item.icon size={20} />
-            <span className="text-[10px]">{item.label}</span>
-          </NavLink>
-        ))}
-        <button
-          onClick={handleLogout}
-          className="flex-1 flex flex-col items-center justify-center py-3 gap-1 font-mono text-xs text-[#888888]"
-        >
-          <LogOut size={20} />
-          <span className="text-[10px]">Logout</span>
-        </button>
-      </div>
-
       {/* Main */}
-      <main className="flex-1 overflow-auto pb-16 lg:pb-0">
+      <main className="flex-1 overflow-auto">
         <Outlet />
       </main>
     </div>

@@ -100,22 +100,13 @@ export default function Home() {
 
       {/* ── HERO ───────────────────────────────────────────── */}
       <section className="relative min-h-screen flex flex-col lg:flex-row items-center overflow-hidden">
-        {/* Hero background image */}
-        <div
-          className="absolute inset-0 z-0"
-          style={{
-            backgroundImage: 'url(/background.jpeg)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            opacity: 0.07,
-          }}
-        />
         {/* LEFT */}
         <div className="w-full lg:w-1/2 flex flex-col justify-center px-8 lg:px-16 py-16 z-10">
           <motion.div
             initial="initial"
             animate="animate"
             transition={{ staggerChildren: 0.15 }}
+            className="lg:-translate-y-8"
           >
             <motion.p
               variants={fadeInUp}

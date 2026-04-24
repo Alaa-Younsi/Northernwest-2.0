@@ -148,6 +148,17 @@ export function Navbar() {
                 )}
               </AnimatePresence>
             </div>
+
+            <NavLink
+              to="/contact"
+              className={({ isActive }) =>
+                `font-display uppercase tracking-[0.1em] text-sm transition-colors relative py-2 ${
+                  isActive ? 'text-[#FF0000]' : 'text-[#888888] hover:text-white'
+                }`
+              }
+            >
+              Contact
+            </NavLink>
           </nav>
 
           {/* Right controls */}
@@ -232,6 +243,7 @@ export function Navbar() {
                   { to: '/category/mouse', label: t('nav.mouse') },
                   { to: '/category/headphones', label: t('nav.headphones') },
                   { to: '/category/keyboards', label: t('nav.keyboards') },
+                  { to: '/contact', label: 'Contact' },
                   { to: '/admin', label: t('nav.admin') },
                 ].map((item) => (
                   <button
