@@ -10,6 +10,7 @@ export interface Category {
   description_fr?: string;
   description_ar?: string;
   image_url?: string;
+  sort_order?: number;
 }
 
 export interface Product {
@@ -62,6 +63,7 @@ export interface Order {
   zip_code?: string;
   total_amount: number;
   created_at: string;
+  admin_note?: string;
   items?: OrderItem[];
 }
 

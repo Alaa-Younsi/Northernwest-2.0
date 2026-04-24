@@ -1,27 +1,22 @@
 interface BadgeProps {
   children: React.ReactNode;
-  variant?: 'red' | 'gray' | 'green' | 'yellow' | 'blue' | 'purple';
+  variant?: 'red' | 'green' | 'gray' | 'yellow' | 'blue' | 'purple' | 'orange';
   className?: string;
 }
 
-const variants = {
-  red: 'bg-[#FF0000] text-black',
-  gray: 'bg-[#1a1a1a] text-[#888888]',
-  green: 'bg-green-900 text-green-400',
-  yellow: 'bg-yellow-900 text-yellow-400',
-  blue: 'bg-blue-900 text-blue-400',
-  purple: 'bg-purple-900 text-purple-400',
+const variantClasses: Record<NonNullable<BadgeProps['variant']>, string> = {
+  red: 'bg-[#FF0000]/10 text-[#FF0000] border-[#FF0000]/30',
+  green: 'bg-green-500/10 text-green-400 border-green-500/30',
+  gray: 'bg-[#888888]/10 text-[#888888] border-[#888888]/30',
+  yellow: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30',
+  blue: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
+  purple: 'bg-purple-500/10 text-purple-400 border-purple-500/30',
+  orange: 'bg-orange-500/10 text-orange-400 border-orange-500/30',
 };
 
-export function Badge({
-  children,
-  variant = 'red',
-  className = '',
-}: BadgeProps) {
+export function Badge({ children, variant = 'gray', className = '' }: BadgeProps) {
   return (
-    <span
-      className={`inline-block px-2 py-0.5 text-xs font-mono font-semibold uppercase tracking-wider rounded-sm ${variants[variant]} ${className}`}
-    >
+    <span className={`inline-flex items-center px-2 py-0.5 font-mono text-xs uppercase tracking-wider border ${variantClasses[variant]} ${className}`}>
       {children}
     </span>
   );

@@ -1,211 +1,250 @@
 import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Pencil, Trash2, Plus } from 'lucide-react';
-import { useAdmin } from '@/hooks/useAdmin';
-import { Modal } from '@/components/ui/Modal';
-import { Button } from '@/components/ui/Button';
+import { Plus, Edit, Trash2, Copy, Star } from 'lucide-react';
+import { useAdminProducts, useAdminCategories } from '@/hooks/useAdmin';
 import { Badge } from '@/components/ui/Badge';
+import { Modal } from '@/components/ui/Modal';
 import { toast } from '@/components/ui/Toast';
-import type { Product } from '@/types';
 import ProductForm from './ProductForm';
+import type { Product } from '@/types';
 
 export default function ProductsManager() {
-  const { t } = useTranslation();
-  const { products, loading, deleteProduct, createProduct, updateProduct } = useAdmin();
-  const [search, setSearch] = useState('');
-  const [formOpen, setFormOpen] = useState(false);
-  const [editProduct, setEditProduct] = useState<Product | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
-  const [page, setPage] = useState(1);
-  const PER_PAGE = 10;
+  const { products, loading, deleteProduct, createProduct, updateProduct, refetch } = useAdminProducts();
+  const { categories } = useAdminCategories();
 
-  const filtered = products.filter(
-    (p) =>
-      p.name_en.toLowerCase().includes(search.toLowerCase()) ||
-      (p.category?.name_en ?? '').toLowerCase().includes(search.toLowerCase())
-  );
-  const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
-  const totalPages = Math.ceil(filtered.length / PER_PAGE);
-
-  const handleDelete = async () => {
-    if (!deleteTarget) return;
-    try {
-      await deleteProduct(deleteTarget.id);
-      toast.success('Product deleted');
-    } catch {
-      toast.error('Delete failed');
-    }
-    setDeleteTarget(null);
-  };
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<string>('all');
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const handleSave = async (data: unknown) => {
     try {
-      if (editProduct) {
-        await updateProduct(editProduct.id, data);
+      if (editingProduct) {
+        await updateProduct(editingProduct.id, data);
         toast.success('Product updated');
+        setEditingProduct(null);
       } else {
         await createProduct(data);
         toast.success('Product created');
+        setShowCreateModal(false);
       }
-      setFormOpen(false);
-      setEditProduct(null);
-    } catch {
-      toast.error('Save failed');
+      refetch();
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Save failed');
     }
+  };
+
+  const filtered = products.filter((p) =>
+    activeCategory === 'all' || p.category_id === activeCategory
+  );
+
+  const toggleSelect = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleBulkDelete = async () => {
+    if (!selected.size) return;
+    if (!confirm(`Delete ${selected.size} product(s)?`)) return;
+    for (const id of Array.from(selected)) {
+      await deleteProduct(id).catch((e: unknown) =>
+        toast.error(e instanceof Error ? e.message : 'Delete failed')
+      );
+    }
+    setSelected(new Set());
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this product?')) return;
+    setDeletingId(id);
+    try {
+      await deleteProduct(id);
+      toast.success('Product deleted');
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Delete failed');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const getStockStatus = (p: Product) => {
+    const stock = p.variants?.reduce((sum, v) => sum + (v.stock ?? 0), 0) ?? null;
+    if (stock === null) return { label: '—', variant: 'gray' as const };
+    if (stock === 0) return { label: 'Out of Stock', variant: 'red' as const };
+    if (stock < 5) return { label: `Low (${stock})`, variant: 'yellow' as const };
+    return { label: String(stock), variant: 'green' as const };
   };
 
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="font-display font-black text-white uppercase text-3xl tracking-widest">
-          {t('admin.products')}
+        <h1 className="font-display font-black text-white uppercase text-3xl tracking-widest border-l-2 border-[#FF0000] pl-4">
+          PRODUCTS
         </h1>
-        <Button
-          variant="primary"
-          onClick={() => { setEditProduct(null); setFormOpen(true); }}
-          className="flex items-center gap-2"
-        >
-          <Plus size={14} />
-          {t('admin.addProduct')}
-        </Button>
+        <div className="flex gap-3">
+          {selected.size > 0 && (
+            <button
+              onClick={handleBulkDelete}
+              className="font-mono text-xs text-[#FF0000] border border-[#FF0000] px-3 py-2 hover:bg-[#FF0000] hover:text-black transition-colors"
+            >
+              DELETE {selected.size} SELECTED
+            </button>
+          )}
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 font-mono text-xs text-black bg-[#FF0000] px-4 py-2 hover:bg-red-600 transition-colors"
+          >
+            <Plus size={12} /> NEW PRODUCT
+          </button>
+        </div>
       </div>
 
-      {/* Search */}
-      <div className="mb-4">
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder={t('admin.search')}
-          className="bg-[#0d0d0d] border border-[#1a1a1a] px-4 py-2.5 font-mono text-sm text-white placeholder-[#333] focus:border-[#FF0000] focus:outline-none w-full max-w-xs"
-        />
+      {/* Category filter tabs */}
+      <div className="flex gap-1 mb-4 overflow-x-auto pb-1">
+        <button
+          onClick={() => setActiveCategory('all')}
+          className={`font-mono text-xs uppercase tracking-widest px-3 py-1.5 whitespace-nowrap border-b-2 transition-colors ${
+            activeCategory === 'all' ? 'text-white border-[#FF0000]' : 'text-[#888888] border-transparent hover:text-white'
+          }`}
+        >
+          All
+        </button>
+        {categories.map((cat) => (
+          <button
+            key={cat.id}
+            onClick={() => setActiveCategory(cat.id)}
+            className={`font-mono text-xs uppercase tracking-widest px-3 py-1.5 whitespace-nowrap border-b-2 transition-colors ${
+              activeCategory === cat.id ? 'text-white border-[#FF0000]' : 'text-[#888888] border-transparent hover:text-white'
+            }`}
+          >
+            {cat.name_en}
+          </button>
+        ))}
       </div>
 
       {/* Table */}
       <div className="bg-[#0d0d0d] border border-[#1a1a1a] overflow-x-auto">
-        <table className="w-full text-sm font-mono">
+        <table className="w-full text-xs font-mono">
           <thead>
             <tr className="border-b border-[#1a1a1a]">
-              {[t('admin.image'), t('admin.name'), t('admin.category'), t('admin.price'), t('admin.stock'), t('admin.status'), t('admin.actions')].map((h) => (
-                <th key={h} className="text-left px-4 py-3 text-xs text-[#888888] uppercase tracking-widest">
-                  {h}
-                </th>
+              <th className="px-3 py-3" />
+              {['Name', 'Category', 'Price', 'Stock', 'Status', 'Actions'].map((h) => (
+                <th key={h} className="text-left px-4 py-3 text-[#888888] uppercase tracking-widest">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {loading ? (
+              [1, 2, 3, 4].map((i) => (
+                <tr key={i} className="border-b border-[#1a1a1a]">
+                  <td colSpan={7} className="px-4 py-3">
+                    <div className="h-4 bg-[#1a1a1a] animate-pulse rounded-sm" />
+                  </td>
+                </tr>
+              ))
+            ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-[#888888]">
-                  {t('common.loading')}
+                <td colSpan={7} className="px-4 py-12 text-center">
+                  <div className="text-[#FF0000] font-display font-black text-2xl mb-2">// EMPTY</div>
+                  <div className="text-[#444] font-mono text-xs">No products in this category</div>
                 </td>
               </tr>
-            ) : paginated.map((product) => (
-              <tr key={product.id} className="border-b border-[#1a1a1a] hover:bg-[#1a1a1a] transition-colors">
-                <td className="px-4 py-3">
-                  {product.images[0] ? (
-                    <img src={product.images[0]} alt={product.name_en} className="w-10 h-10 object-cover" />
-                  ) : (
-                    <div className="w-10 h-10 bg-[#111] flex items-center justify-center text-[#333] text-xs font-display">NW</div>
-                  )}
-                </td>
-                <td className="px-4 py-3 text-white font-bold">{product.name_en}</td>
-                <td className="px-4 py-3 text-[#888888]">{product.category?.name_en ?? '—'}</td>
-                <td className="px-4 py-3 text-[#FF0000]">${product.base_price.toFixed(2)}</td>
-                <td className="px-4 py-3 text-[#888888]">
-                  {product.variants
-                    ? product.variants.reduce((s, v) => s + v.stock, 0)
-                    : '—'}
-                </td>
-                <td className="px-4 py-3">
-                  <Badge variant={product.is_active ? 'green' : 'gray'}>
-                    {product.is_active ? 'Active' : 'Inactive'}
-                  </Badge>
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => { setEditProduct(product); setFormOpen(true); }}
-                      className="text-[#888888] hover:text-white transition-colors"
-                      aria-label="Edit"
-                    >
-                      <Pencil size={15} />
-                    </button>
-                    <button
-                      onClick={() => setDeleteTarget(product)}
-                      className="text-[#888888] hover:text-[#FF0000] transition-colors"
-                      aria-label="Delete"
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {!loading && paginated.length === 0 && (
-              <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-[#888888]">
-                  {t('common.noResults')}
-                </td>
-              </tr>
-            )}
+            ) : filtered.map((product) => {
+              const stock = getStockStatus(product);
+              const catName = categories.find((c) => c.id === product.category_id)?.name_en ?? '—';
+              return (
+                <tr key={product.id} className="border-b border-[#1a1a1a] hover:bg-[#1a1a1a] transition-colors group">
+                  <td className="px-3 py-3">
+                    <input
+                      type="checkbox"
+                      checked={selected.has(product.id)}
+                      onChange={() => toggleSelect(product.id)}
+                      className="w-3 h-3 accent-[#FF0000]"
+                    />
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      {product.images?.[0] && (
+                        <img src={product.images[0]} alt="" className="w-8 h-8 object-cover opacity-60" />
+                      )}
+                      <div>
+                        <p className="text-white font-bold">{product.name_en}</p>
+                        {product.is_featured && <Star size={10} className="text-yellow-400 mt-0.5" />}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-[#888888]">{catName}</td>
+                  <td className="px-4 py-3 text-white">${product.base_price.toFixed(2)}</td>
+                  <td className="px-4 py-3"><Badge variant={stock.variant}>{stock.label}</Badge></td>
+                  <td className="px-4 py-3">
+                    <Badge variant={product.is_active ? 'green' : 'gray'}>
+                      {product.is_active ? 'Active' : 'Hidden'}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => setEditingProduct(product)}
+                        className="text-[#888888] hover:text-white"
+                        aria-label="Edit product"
+                      >
+                        <Edit size={13} />
+                      </button>
+                      <button
+                        aria-label="Duplicate product"
+                        className="text-[#888888] hover:text-blue-400"
+                      >
+                        <Copy size={13} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(product.id)}
+                        disabled={deletingId === product.id}
+                        className="text-[#888888] hover:text-[#FF0000] disabled:opacity-30"
+                        aria-label="Delete product"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex gap-2 mt-4">
-          {Array.from({ length: totalPages }).map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setPage(i + 1)}
-              className={`w-8 h-8 font-mono text-xs ${
-                page === i + 1
-                  ? 'bg-[#FF0000] text-black'
-                  : 'border border-[#1a1a1a] text-[#888888] hover:border-[#FF0000]'
-              }`}
-            >
-              {i + 1}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Product Form Modal */}
+      {/* Create Modal */}
       <Modal
-        isOpen={formOpen}
-        onClose={() => { setFormOpen(false); setEditProduct(null); }}
-        title={editProduct ? t('admin.editProduct') : t('admin.addProduct')}
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        title="New Product"
         size="xl"
       >
         <ProductForm
-          product={editProduct}
+          product={null}
           onSave={handleSave}
-          onCancel={() => { setFormOpen(false); setEditProduct(null); }}
+          onCancel={() => setShowCreateModal(false)}
         />
       </Modal>
 
-      {/* Delete Confirmation Modal */}
+      {/* Edit Modal */}
       <Modal
-        isOpen={!!deleteTarget}
-        onClose={() => setDeleteTarget(null)}
-        title={t('admin.deleteProduct')}
-        size="sm"
+        isOpen={!!editingProduct}
+        onClose={() => setEditingProduct(null)}
+        title="Edit Product"
+        size="xl"
       >
-        <div className="p-6 text-center">
-          <p className="font-mono text-[#888888] text-sm mb-6">
-            Delete <span className="text-white">{deleteTarget?.name_en}</span>? This cannot be undone.
-          </p>
-          <div className="flex gap-3 justify-center">
-            <Button variant="danger" onClick={handleDelete}>
-              {t('admin.delete')}
-            </Button>
-            <Button variant="ghost" onClick={() => setDeleteTarget(null)}>
-              {t('admin.cancel')}
-            </Button>
-          </div>
-        </div>
+        {editingProduct && (
+          <ProductForm
+            product={editingProduct}
+            onSave={handleSave}
+            onCancel={() => setEditingProduct(null)}
+          />
+        )}
       </Modal>
     </div>
   );

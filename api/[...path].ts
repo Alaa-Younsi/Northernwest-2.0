@@ -19,15 +19,16 @@ function getAuthClient() {
   );
 }
 
-// ─── Require admin — verifies the Supabase JWT ────────────────────────────────
+// ─── Require admin — use anon client to validate user JWTs ──────────────────
 async function requireAdmin(req: VercelRequest, res: VercelResponse): Promise<boolean> {
   const auth = req.headers.authorization;
   if (!auth?.startsWith('Bearer ')) {
     res.status(401).json({ error: 'Unauthorized' });
     return false;
   }
-  // Use service role key — it can verify any Supabase JWT without needing anon key
-  const { data, error } = await getSupabase().auth.getUser(auth.slice(7));
+  const token = auth.slice(7);
+  // Use anon client (not service role) to validate user JWTs
+  const { data, error } = await getAuthClient().auth.getUser(token);
   if (error || !data.user) {
     res.status(401).json({ error: 'Invalid or expired token' });
     return false;
@@ -244,41 +245,91 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // ── /api/admin ─────────────────────────────────────────────────────────────
   if (segments[0] === 'admin') {
-    // POST /api/admin/login  (public — no auth check)
+    // POST /api/admin/login (public)
     if (segments[1] === 'login' && method === 'POST') {
       const { email, password } = body as { email: string; password: string };
-      if (!email || !password) {
-        return res.status(400).json({ error: 'Email and password are required' });
-      }
+      if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
       const { data, error } = await getAuthClient().auth.signInWithPassword({ email, password });
-      if (error || !data.session) {
-        return res.status(401).json({ error: 'Invalid credentials' });
-      }
+      if (error || !data.session) return res.status(401).json({ error: error?.message ?? 'Invalid credentials' });
       return res.json({ token: data.session.access_token });
     }
 
     // All routes below require admin token
     if (!await requireAdmin(req, res)) return;
 
-    // GET /api/admin/dashboard
+    // GET /api/admin/dashboard (ENHANCED)
     if (segments[1] === 'dashboard') {
       const [
         { count: total_orders },
         { count: pending_orders },
         { count: total_products },
         { data: revenueData },
+        { data: ordersStatusData },
+        { data: topProductsData },
       ] = await Promise.all([
         db.from('orders').select('*', { count: 'exact', head: true }),
         db.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
         db.from('products').select('*', { count: 'exact', head: true }).eq('is_active', true),
         db.from('orders').select('total_amount').neq('status', 'cancelled'),
+        db.from('orders').select('status'),
+        db.from('order_items').select('product_name_en, quantity, unit_price'),
       ]);
 
       const revenue = (revenueData ?? []).reduce(
         (s: number, o: { total_amount: number }) => s + o.total_amount,
         0
       );
-      return res.json({ total_orders, pending_orders, total_products, revenue });
+
+      // Orders by status
+      const orders_by_status: Record<string, number> = {};
+      for (const o of (ordersStatusData ?? []) as Array<{ status: string }>) {
+        orders_by_status[o.status] = (orders_by_status[o.status] ?? 0) + 1;
+      }
+
+      // Top products
+      const productMap: Record<string, { total_sold: number; revenue: number }> = {};
+      for (const item of (topProductsData ?? []) as Array<{ product_name_en: string; quantity: number; unit_price: number }>) {
+        if (!productMap[item.product_name_en]) productMap[item.product_name_en] = { total_sold: 0, revenue: 0 };
+        productMap[item.product_name_en].total_sold += item.quantity;
+        productMap[item.product_name_en].revenue += item.quantity * item.unit_price;
+      }
+      const top_products = Object.entries(productMap)
+        .map(([product_name_en, stats]) => ({ product_name_en, ...stats }))
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 5);
+
+      const { data: recent_orders } = await db.from('orders').select('*').order('created_at', { ascending: false }).limit(10);
+
+      return res.json({ total_orders, pending_orders, total_products, revenue, orders_by_status, recent_orders: recent_orders ?? [], top_products });
+    }
+
+    // ── Admin Categories CRUD ────────────────────────────────────────────────
+    if (segments[1] === 'categories') {
+      if (segments.length === 2) {
+        if (method === 'GET') {
+          const { data, error } = await db.from('categories').select('*').order('sort_order', { ascending: true });
+          if (error) return res.status(500).json({ error: error.message });
+          return res.json(data);
+        }
+        if (method === 'POST') {
+          const { data, error } = await db.from('categories').insert(body).select().single();
+          if (error) return res.status(500).json({ error: error.message });
+          return res.status(201).json(data);
+        }
+      }
+      if (segments.length === 3) {
+        const id = segments[2];
+        if (method === 'PATCH') {
+          const { data, error } = await db.from('categories').update(body).eq('id', id).select().single();
+          if (error) return res.status(500).json({ error: error.message });
+          return res.json(data);
+        }
+        if (method === 'DELETE') {
+          const { error } = await db.from('categories').delete().eq('id', id);
+          if (error) return res.status(500).json({ error: error.message });
+          return res.json({ success: true });
+        }
+      }
     }
 
     // GET /api/admin/products  |  POST /api/admin/products
@@ -332,12 +383,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // GET /api/admin/orders
-    if (segments[1] === 'orders' && segments.length === 2) {
-      const { data, error } = await db
-        .from('orders')
-        .select('*, items:order_items(*)')
-        .order('created_at', { ascending: false });
+    if (segments[1] === 'orders' && segments.length === 2 && method === 'GET') {
+      const { status, page = '1', limit = '20' } = req.query as Record<string, string>;
+      const from = (parseInt(page) - 1) * parseInt(limit);
+      const to = from + parseInt(limit) - 1;
+      let q = db.from('orders').select('*, items:order_items(*)', { count: 'exact' }).order('created_at', { ascending: false }).range(from, to);
+      if (status && status !== 'all') q = q.eq('status', status);
+      const { data, error, count } = await q;
       if (error) return res.status(500).json({ error: error.message });
+      return res.json({ data, count });
+    }
+
+    // GET /api/admin/orders/:id
+    if (segments[1] === 'orders' && segments.length === 3 && method === 'GET') {
+      const { data, error } = await db.from('orders').select('*, items:order_items(*)').eq('id', segments[2]).single();
+      if (error) return res.status(404).json({ error: 'Order not found' });
       return res.json(data);
     }
 
@@ -346,13 +406,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const { status } = body as { status: string };
       const VALID = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
       if (!VALID.includes(status)) return res.status(400).json({ error: 'Invalid status' });
+      const { data, error } = await db.from('orders').update({ status }).eq('id', segments[2]).select().single();
+      if (error) return res.status(500).json({ error: error.message });
+      return res.json(data);
+    }
 
-      const { data, error } = await db
-        .from('orders')
-        .update({ status })
-        .eq('id', segments[2])
-        .select()
-        .single();
+    // PATCH /api/admin/orders/:id/note
+    if (segments[1] === 'orders' && segments.length === 4 && segments[3] === 'note' && method === 'PATCH') {
+      const { note } = body as { note: string };
+      const { data, error } = await db.from('orders').update({ admin_note: note }).eq('id', segments[2]).select().single();
       if (error) return res.status(500).json({ error: error.message });
       return res.json(data);
     }

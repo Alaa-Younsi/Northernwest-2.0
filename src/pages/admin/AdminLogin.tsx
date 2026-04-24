@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { SEOHead } from '@/components/seo/SEOHead';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/store/authStore';
-import { supabase } from '@/lib/supabase';
+import { api } from '@/lib/api';
 import { toast } from '@/components/ui/Toast';
 
 const schema = z.object({
@@ -30,18 +30,12 @@ export default function AdminLogin() {
   const onSubmit = async (data: LoginForm) => {
     setLoading(true);
     try {
-      const { data: authData, error } = await supabase.auth.signInWithPassword({
-        email: data.email,
-        password: data.password,
-      });
-      if (error || !authData.session) {
-        toast.error(error?.message ?? 'Invalid credentials');
-        return;
-      }
-      setToken(authData.session.access_token);
+      const result = await api.admin.login(data.email, data.password);
+      setToken(result.token);
+      localStorage.setItem('nw_admin_token', result.token);
       navigate('/admin');
-    } catch {
-      toast.error('Login failed');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Login failed');
     } finally {
       setLoading(false);
     }

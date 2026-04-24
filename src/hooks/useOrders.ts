@@ -11,7 +11,7 @@ export function useOrders() {
     setLoading(true);
     api.admin.orders
       .getAll()
-      .then(setOrders)
+      .then(({ data }) => setOrders(data))
       .catch((err: unknown) =>
         setError(err instanceof Error ? err.message : 'Failed to load orders')
       )

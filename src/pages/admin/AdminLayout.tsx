@@ -1,13 +1,12 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Outlet, useNavigate, NavLink, Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { LayoutDashboard, Package, ShoppingBag, LogOut } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingBag, LogOut, Tag, Settings2, Store } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 
 export default function AdminLayout() {
-  const { t } = useTranslation();
   const { token, logout } = useAuthStore();
   const navigate = useNavigate();
+  const [clock, setClock] = useState(() => new Date().toLocaleTimeString());
 
   useEffect(() => {
     if (!token) {
@@ -15,15 +14,22 @@ export default function AdminLayout() {
     }
   }, [token, navigate]);
 
+  useEffect(() => {
+    const id = setInterval(() => setClock(new Date().toLocaleTimeString()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
   const handleLogout = () => {
     logout();
     navigate('/admin/login');
   };
 
   const navItems = [
-    { to: '/admin', label: t('admin.dashboard'), icon: LayoutDashboard, end: true },
-    { to: '/admin/products', label: t('admin.products'), icon: Package, end: false },
-    { to: '/admin/orders', label: t('admin.orders'), icon: ShoppingBag, end: false },
+    { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
+    { to: '/admin/products', label: 'Products', icon: Package, end: false },
+    { to: '/admin/orders', label: 'Orders', icon: ShoppingBag, end: false },
+    { to: '/admin/categories', label: 'Categories', icon: Tag, end: false },
+    { to: '/admin/settings', label: 'Settings', icon: Settings2, end: false },
   ];
 
   return (
@@ -31,7 +37,7 @@ export default function AdminLayout() {
       {/* Sidebar — desktop */}
       <aside className="hidden lg:flex flex-col w-64 bg-[#0d0d0d] border-r border-[#1a1a1a]">
         <div className="p-6 border-b border-[#1a1a1a]">
-          <Link to="/admin" className="flex items-center gap-2">
+          <Link to="/admin" className="flex items-center gap-2 mb-3">
             <div className="w-8 h-8 bg-black border border-[#FF0000] flex items-center justify-center">
               <span className="text-[#FF0000] font-display font-black text-sm">NW</span>
             </div>
@@ -40,10 +46,17 @@ export default function AdminLayout() {
                 NORTHERNWEST
               </div>
               <div className="font-mono text-xs text-[#FF0000] uppercase tracking-widest">
-                {t('admin.adminPanel')}
+                Admin Panel
               </div>
             </div>
           </Link>
+          <div className="flex items-center justify-between">
+            <span className="font-mono text-xs text-[#444]">{clock}</span>
+            <span className="flex items-center gap-1.5 font-mono text-xs text-green-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+              Online
+            </span>
+          </div>
         </div>
 
         <nav className="flex-1 p-4 space-y-1">
@@ -66,13 +79,20 @@ export default function AdminLayout() {
           ))}
         </nav>
 
-        <div className="p-4 border-t border-[#1a1a1a]">
+        <div className="p-4 border-t border-[#1a1a1a] space-y-1">
+          <Link
+            to="/"
+            className="flex items-center gap-3 w-full px-4 py-3 font-mono text-sm text-[#888888] hover:text-white hover:bg-[#1a1a1a] transition-colors"
+          >
+            <Store size={16} />
+            Back to Store
+          </Link>
           <button
             onClick={handleLogout}
             className="flex items-center gap-3 w-full px-4 py-3 font-mono text-sm text-[#FF0000] hover:bg-[#FF0000]/10 transition-colors"
           >
             <LogOut size={16} />
-            {t('admin.logout')}
+            Logout
           </button>
         </div>
       </aside>

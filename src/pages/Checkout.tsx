@@ -44,7 +44,22 @@ export default function Checkout() {
     }
     setSubmitting(true);
     try {
-      const { order_number } = await api.orders.create({ ...data, items });
+      const { order_number } = await api.orders.create({
+        customer_name: data.customer_name,
+        customer_email: data.customer_email,
+        customer_phone: data.customer_phone,
+        address_line1: data.shipping_address,
+        city: data.shipping_city,
+        country: data.shipping_country,
+        zip_code: data.shipping_zip,
+        notes: data.notes,
+        items: items
+          .map((item) => ({
+            variant_id: item.variant?.id ?? item.product.variants?.[0]?.id ?? '',
+            quantity: item.quantity,
+          }))
+          .filter((i) => i.variant_id !== ''),
+      });
       clearCart();
       navigate(`/order-confirmation/${order_number}`);
     } catch (err) {

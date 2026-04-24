@@ -19,6 +19,8 @@ const AdminLogin = lazy(() => import('@/pages/admin/AdminLogin'));
 const Dashboard = lazy(() => import('@/pages/admin/Dashboard'));
 const ProductsManager = lazy(() => import('@/pages/admin/ProductsManager'));
 const OrdersManager = lazy(() => import('@/pages/admin/OrdersManager'));
+const CategoriesManager = lazy(() => import('@/pages/admin/CategoriesManager'));
+const AdminSettings = lazy(() => import('@/pages/admin/Settings'));
 
 const Loader = () => (
   <div className="min-h-screen bg-[#050505] flex items-center justify-center">
@@ -53,6 +55,8 @@ export default function App() {
               <Route index element={<Dashboard />} />
               <Route path="products" element={<ProductsManager />} />
               <Route path="orders" element={<OrdersManager />} />
+              <Route path="categories" element={<CategoriesManager />} />
+              <Route path="settings" element={<AdminSettings />} />
             </Route>
           </Routes>
         </Suspense>

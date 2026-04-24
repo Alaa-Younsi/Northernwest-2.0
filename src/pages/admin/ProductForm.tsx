@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Plus, Trash2, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { api } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/components/ui/Toast';
 import type { Product, Category } from '@/types';
@@ -48,13 +49,9 @@ export default function ProductForm({ product, onSave, onCancel }: ProductFormPr
   const [categories, setCategories] = useState<Category[]>([]);
 
   useEffect(() => {
-    supabase
-      .from('categories')
-      .select('*')
-      .order('sort_order', { ascending: true })
-      .then(({ data, error }) => {
-        if (!error && data) setCategories(data);
-      });
+    api.admin.categories.getAll()
+      .then(setCategories)
+      .catch(console.error);
   }, []);
 
   const {

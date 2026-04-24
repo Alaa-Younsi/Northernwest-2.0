@@ -17,9 +17,9 @@ export function useProducts(options?: {
     setError(null);
     api.products
       .getAll(options)
-      .then(({ products, total }) => {
-        setProducts(products);
-        setTotal(total);
+      .then(({ data, count }) => {
+        setProducts(data);
+        setTotal(count);
       })
       .catch((err: unknown) =>
         setError(err instanceof Error ? err.message : 'Failed to load products')
