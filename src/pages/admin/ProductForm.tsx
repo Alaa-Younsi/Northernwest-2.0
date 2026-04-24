@@ -49,7 +49,7 @@ export default function ProductForm({ product, onSave, onCancel }: ProductFormPr
   const [categories, setCategories] = useState<Category[]>([]);
 
   useEffect(() => {
-    api.admin.categories.getAll()
+    api.categories.getAll()
       .then(setCategories)
       .catch(console.error);
   }, []);

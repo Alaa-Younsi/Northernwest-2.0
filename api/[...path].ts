@@ -88,7 +88,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const { data, error } = await db
         .from('categories')
         .select('*')
-        .order('sort_order', { ascending: true });
+        .order('name_en', { ascending: true });
       if (error) return res.status(500).json({ error: error.message });
       return res.json(data);
     }
@@ -307,7 +307,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (segments[1] === 'categories') {
       if (segments.length === 2) {
         if (method === 'GET') {
-          const { data, error } = await db.from('categories').select('*').order('sort_order', { ascending: true });
+          const { data, error } = await db.from('categories').select('*').order('name_en', { ascending: true });
           if (error) return res.status(500).json({ error: error.message });
           return res.json(data);
         }
