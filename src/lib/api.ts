@@ -205,14 +205,62 @@ export const api = {
         return (data as Product[]) ?? [];
       },
       create: async (productData: unknown): Promise<Product> => {
-        const { data, error } = await supabase.from('products').insert(productData as any).select(PRODUCT_SELECT).single();
+        const { variants, category, slug: _slug, ...fields } = productData as any;
+        // Generate slug from English name if not provided
+        const slug = (_slug as string) || (fields.name_en as string).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        const { data, error } = await supabase
+          .from('products')
+          .insert({ ...fields, slug })
+          .select('id')
+          .single();
         if (error) throw new Error(error.message);
-        return data as Product;
+        // Insert variants into product_variants table
+        if (variants?.length) {
+          const variantRows = (variants as any[]).map(({ id: _id, ...v }: any) => ({
+            ...v,
+            product_id: data.id,
+          }));
+          const { error: vErr } = await supabase.from('product_variants').insert(variantRows);
+          if (vErr) throw new Error(vErr.message);
+        }
+        // Fetch full product with relations
+        const { data: full, error: fetchErr } = await supabase
+          .from('products')
+          .select(PRODUCT_SELECT)
+          .eq('id', data.id)
+          .single();
+        if (fetchErr) throw new Error(fetchErr.message);
+        return full as Product;
       },
       update: async (id: string, productData: unknown): Promise<Product> => {
-        const { data, error } = await supabase.from('products').update(productData as any).eq('id', id).select(PRODUCT_SELECT).single();
+        const { variants, category, ...fields } = productData as any;
+        const { data, error } = await supabase
+          .from('products')
+          .update(fields)
+          .eq('id', id)
+          .select('id')
+          .single();
         if (error) throw new Error(error.message);
-        return data as Product;
+        // Replace variants: delete old ones, insert new ones
+        if (variants !== undefined) {
+          await supabase.from('product_variants').delete().eq('product_id', id);
+          if (variants.length) {
+            const variantRows = (variants as any[]).map(({ id: _id, ...v }: any) => ({
+              ...v,
+              product_id: id,
+            }));
+            const { error: vErr } = await supabase.from('product_variants').insert(variantRows);
+            if (vErr) throw new Error(vErr.message);
+          }
+        }
+        // Fetch full product with relations
+        const { data: full, error: fetchErr } = await supabase
+          .from('products')
+          .select(PRODUCT_SELECT)
+          .eq('id', id)
+          .single();
+        if (fetchErr) throw new Error(fetchErr.message);
+        return full as Product;
       },
       delete: async (id: string): Promise<{ success: boolean }> => {
         const { error } = await supabase.from('products').delete().eq('id', id);
