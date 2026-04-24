@@ -50,8 +50,17 @@ export default function ProductForm({ product, onSave, onCancel }: ProductFormPr
 
   useEffect(() => {
     api.categories.getAll()
-      .then(setCategories)
-      .catch(console.error);
+      .then((data) => {
+        if (!data || data.length === 0) {
+          toast.error('No categories found. Run supabase/seed.sql first.');
+        }
+        setCategories(data ?? []);
+      })
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : 'Failed to load categories';
+        console.error('[ProductForm] categories fetch failed:', err);
+        toast.error(`Categories error: ${msg}`);
+      });
   }, []);
 
   const {

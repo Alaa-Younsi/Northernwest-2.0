@@ -81,6 +81,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const db = getSupabase();
 
+  // ── GET /api/debug/categories ─────────────────────────────────────────────
+  if (segments[0] === 'debug' && segments[1] === 'categories') {
+    const { data, error } = await db.from('categories').select('*');
+    return res.json({
+      ok: !error,
+      count: data?.length ?? 0,
+      error: error?.message ?? null,
+      data: data ?? [],
+      env: {
+        hasUrl: !!process.env.VITE_SUPABASE_URL,
+        hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+      },
+    });
+  }
+
   // ── /api/categories ────────────────────────────────────────────────────────
   if (segments[0] === 'categories') {
     // GET /api/categories
@@ -88,9 +103,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const { data, error } = await db
         .from('categories')
         .select('*')
-        .order('name_en', { ascending: true });
-      if (error) return res.status(500).json({ error: error.message });
-      return res.json(data);
+        .order('sort_order', { ascending: true, nullsFirst: false });
+      if (error) {
+        // Fallback if sort_order column doesn't exist yet
+        const { data: fallback, error: err2 } = await db
+          .from('categories')
+          .select('*')
+          .order('name_en', { ascending: true });
+        if (err2) return res.status(500).json({ error: err2.message });
+        return res.json(fallback ?? []);
+      }
+      return res.json(data ?? []);
     }
     // GET /api/categories/:slug
     if (segments.length === 2) {

@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:server": "bun --watch server/index.ts",
+    "dev:full": "concurrently \"vite\" \"bun --watch server/index.ts\" --names \"vite,server\" --prefix-colors \"cyan,red\"",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "server:dev": "bun --watch server/index.ts",
@@ -31,6 +33,7 @@
     "zustand": "^4.5.2"
   },
   "devDependencies": {
+    "concurrently": "^8.2.2",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "@types/jsonwebtoken": "^9.0.6",
